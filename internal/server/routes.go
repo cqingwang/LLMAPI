@@ -1,6 +1,8 @@
 package server
 
 import (
+	"strings"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -35,6 +37,7 @@ type Handlers struct {
 	Antigravity    *api.AntigravityHandlers
 	Copilot        *api.CopilotHandlers
 	RequestContent *api.RequestContentHandlers
+	RequestShare   *api.RequestShareHandlers
 	OIDC           *api.OIDCHandlers
 	RequestPreview *api.RequestPreviewHandlers
 }
@@ -59,6 +62,22 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 	server.Use(middleware.WithEntClient(client))
 	server.Use(middleware.WithLoggingTracing(server.Config.Trace))
 	server.Use(middleware.WithMetrics())
+
+	sharedRequestGroup := server.Group("", middleware.WithOptionalSessionIDJWTAuth(services.AuthService))
+	sharedRequestGroup.GET("/project/requests/:request_id", func(c *gin.Context) {
+		if shouldServeRequestSharePage(c) {
+			static.Handler()(c)
+			return
+		}
+		handlers.RequestShare.ShareRequest(c)
+	})
+	sharedRequestGroup.GET("/requests/:request_id", func(c *gin.Context) {
+		if shouldServeRequestSharePage(c) {
+			static.Handler()(c)
+			return
+		}
+		handlers.RequestShare.ShareRequest(c)
+	})
 
 	// Setup CORS middleware at server level if enabled
 	if server.Config.CORS.Enabled {
@@ -248,4 +267,11 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 
 		registerGeminiRoutes(geminiAliasGroup)
 	}
+}
+
+func shouldServeRequestSharePage(c *gin.Context) bool {
+	if strings.TrimSpace(c.Query("sessionid")) == "" {
+		return true
+	}
+	return strings.Contains(strings.ToLower(c.GetHeader("Accept")), "text/html")
 }

@@ -470,7 +470,7 @@ func (r *queryResolver) Requests(ctx context.Context, after *entgql.Cursor[int],
 		orderBy.Field = ent.DefaultRequestOrder.Field
 	}
 
-	return r.client.Request.Query().Paginate(ctx, after, first, before, last,
+	return ent.SelectRequestQueryFields(r.client.Request.Query(), ctx).Paginate(ctx, after, first, before, last,
 		ent.WithRequestOrder(orderBy),
 		ent.WithRequestFilter(where.Filter),
 	)

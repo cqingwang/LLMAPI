@@ -58,6 +58,29 @@ export const setTokenToStorage = (token: string): void => {
   }
 };
 
+export const restoreTokenFromSessionURL = (): void => {
+  if (typeof window === 'undefined') return;
+
+  const sessionId = new URL(window.location.href).searchParams.get('sessionid');
+  if (!sessionId) return;
+
+  setTokenToStorage(sessionId);
+  useAuthStore.getState().auth.setAccessToken(sessionId);
+};
+
+export const ensureSessionIdInURL = (): void => {
+  if (typeof window === 'undefined') return;
+
+  const token = getTokenFromStorage();
+  if (!token) return;
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('sessionid') === token) return;
+
+  url.searchParams.set('sessionid', token);
+  window.history.replaceState(window.history.state, '', url);
+};
+
 export const removeTokenFromStorage = (): void => {
   try {
     localStorage.removeItem(ACCESS_TOKEN);

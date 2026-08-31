@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -114,6 +115,21 @@ func WithJWTAuth(auth *biz.AuthService) gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
+	}
+}
+
+// WithOptionalSessionIDJWTAuth 仅在分享 URL 携带 sessionid 时启用 JWT 认证。
+// 不带 sessionid 的请求继续交给前端 SPA 处理。
+func WithOptionalSessionIDJWTAuth(auth *biz.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		sessionID := strings.TrimSpace(c.Query("sessionid"))
+		if sessionID == "" {
+			c.Next()
+			return
+		}
+
+		c.Request.Header.Set("Authorization", "Bearer "+sessionID)
+		WithJWTAuth(auth)(c)
 	}
 }
 
