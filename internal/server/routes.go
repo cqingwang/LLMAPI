@@ -1,8 +1,6 @@
 package server
 
 import (
-	"strings"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -16,6 +14,8 @@ import (
 	"github.com/looplj/axonhub/internal/server/middleware"
 	"github.com/looplj/axonhub/internal/server/static"
 )
+
+const browserSessionCookieName = "axonhub_browser_session"
 
 type Handlers struct {
 	fx.In
@@ -64,15 +64,15 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 	server.Use(middleware.WithMetrics())
 
 	sharedRequestGroup := server.Group("", middleware.WithOptionalSessionIDJWTAuth(services.AuthService))
-	sharedRequestGroup.GET("/project/requests/:request_id", func(c *gin.Context) {
-		if shouldServeRequestSharePage(c) {
+	sharedRequestGroup.GET("/project/requests/*request_id", func(c *gin.Context) {
+		if shouldServeRequestSharePage(c, services.AuthService) {
 			static.Handler()(c)
 			return
 		}
 		handlers.RequestShare.ShareRequest(c)
 	})
-	sharedRequestGroup.GET("/requests/:request_id", func(c *gin.Context) {
-		if shouldServeRequestSharePage(c) {
+	sharedRequestGroup.GET("/requests/*request_id", func(c *gin.Context) {
+		if shouldServeRequestSharePage(c, services.AuthService) {
 			static.Handler()(c)
 			return
 		}
@@ -269,9 +269,19 @@ func SetupRoutes(server *Server, handlers Handlers, client *ent.Client, services
 	}
 }
 
-func shouldServeRequestSharePage(c *gin.Context) bool {
-	if strings.TrimSpace(c.Query("sessionid")) == "" {
-		return true
+func shouldServeRequestSharePage(c *gin.Context, auth *biz.AuthService) bool {
+	// Cookie 必须是当前有效 JWT；任意其他或已过期 Cookie 都按复制 URL 处理。
+	// 不能依据 Accept：浏览器、curl 和部分智能体都可能携带相同的 Accept。
+	cookie, ok := browserSessionCookie(c)
+	if !ok {
+		return false
 	}
-	return strings.Contains(strings.ToLower(c.GetHeader("Accept")), "text/html")
+
+	_, err := auth.AuthenticateJWTToken(c.Request.Context(), cookie)
+	return err == nil
+}
+
+func browserSessionCookie(c *gin.Context) (string, bool) {
+	cookie, err := c.Cookie(browserSessionCookieName)
+	return cookie, err == nil && cookie != ""
 }

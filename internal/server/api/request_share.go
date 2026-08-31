@@ -124,7 +124,7 @@ func (h *RequestShareHandlers) ShareRequest(c *gin.Context) {
 }
 
 func parseSharedRequestID(value string) (int, error) {
-	value = strings.TrimSpace(value)
+	value = strings.TrimPrefix(strings.TrimSpace(value), "/")
 	guid, err := objects.ParseGUID(value)
 	if err != nil || guid.Type != ent.TypeRequest || guid.ID <= 0 {
 		return 0, fmt.Errorf("invalid request ID")

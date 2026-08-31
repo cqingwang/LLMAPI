@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export const ACCESS_TOKEN = 'axonhub_access_token';
+export const BROWSER_SESSION_COOKIE = 'axonhub_browser_session';
 const USER_INFO = 'axonhub_user_info';
 
 interface Role {
@@ -54,6 +55,9 @@ export const getTokenFromStorage = (): string => {
 export const setTokenToStorage = (token: string): void => {
   try {
     localStorage.setItem(ACCESS_TOKEN, token);
+    if (typeof document !== 'undefined') {
+      document.cookie = `${BROWSER_SESSION_COOKIE}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
+    }
   } catch (error) {
   }
 };
@@ -66,6 +70,15 @@ export const restoreTokenFromSessionURL = (): void => {
 
   setTokenToStorage(sessionId);
   useAuthStore.getState().auth.setAccessToken(sessionId);
+};
+
+export const markBrowserSession = (): void => {
+  if (typeof document === 'undefined') return;
+
+  const token = getTokenFromStorage();
+  if (!token) return;
+
+  document.cookie = `${BROWSER_SESSION_COOKIE}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
 };
 
 export const ensureSessionIdInURL = (): void => {
@@ -84,6 +97,9 @@ export const ensureSessionIdInURL = (): void => {
 export const removeTokenFromStorage = (): void => {
   try {
     localStorage.removeItem(ACCESS_TOKEN);
+    if (typeof document !== 'undefined') {
+      document.cookie = `${BROWSER_SESSION_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+    }
   } catch (error) {
   }
 };

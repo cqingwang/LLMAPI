@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { toast } from 'sonner';
-import { restoreTokenFromSessionURL, useAuthStore } from '@/stores/authStore';
+import { markBrowserSession, restoreTokenFromSessionURL, useAuthStore } from '@/stores/authStore';
 import { handleServerError } from '@/utils/handle-server-error';
 import { FontProvider } from './context/font-context';
 import { SearchProvider } from './context/search-context';
@@ -15,6 +15,7 @@ import i18n from './lib/i18n';
 // Generated Routes
 import { routeTree } from './routeTree.gen';
 
+markBrowserSession();
 restoreTokenFromSessionURL();
 
 const queryClient = new QueryClient({
