@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -695,6 +696,16 @@ func TestPlaygroundHandleError_QuotaExhausted_Returns503(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, errResp.Status)
 	assert.Equal(t, http.StatusServiceUnavailable, errResp.Error.Code)
 	assert.Equal(t, "all channels quota exhausted for model gpt-4", errResp.Error.Message)
+}
+
+func TestPlaygroundHandleError_InvalidModel_Returns400(t *testing.T) {
+	handlers := &PlaygroundHandlers{}
+
+	errResp := handlers.HandleError(fmt.Errorf("%w: request model is empty", biz.ErrInvalidModel))
+
+	assert.Equal(t, http.StatusBadRequest, errResp.Status)
+	assert.Equal(t, http.StatusBadRequest, errResp.Error.Code)
+	assert.Contains(t, errResp.Error.Message, "request model is empty")
 }
 
 func TestPlaygroundHandleError_OtherError_Returns500(t *testing.T) {

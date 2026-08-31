@@ -187,12 +187,13 @@ export default function Playground() {
       e.preventDefault();
       // block submit while a request is in-flight
       if (isLoading) return;
+      if (!modelRef.current.trim()) return;
       if (message.text?.trim()) {
         sendMessage({ text: message.text });
         setInput('');
       }
     },
-    [sendMessage, selectedChannel, isLoading]
+    [sendMessage, isLoading]
   );
 
   const handleClear = useCallback(() => {
@@ -540,7 +541,7 @@ export default function Playground() {
               />
               <PromptInputSubmit
                 status={status}
-                disabled={status === 'ready' ? !input.trim() : false}
+                disabled={status === 'ready' ? !input.trim() || !model.trim() : false}
                 // className='absolute right-2 top-1/2 -translate-y-1/2'
                 className='absolute right-3 bottom-3'
                 onClick={(e) => {
