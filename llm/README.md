@@ -2,7 +2,7 @@
 
 ## 核心设计理念
 
-AxonHub 的 LLM Pipeline 采用**转换器链（Transformer Chain）**模式，将不同 AI 提供商的 API 统一为标准的 OpenAI 兼容接口。
+LiteLLM 的 LLM Pipeline 采用**转换器链（Transformer Chain）**模式，将不同 AI 提供商的 API 统一为标准的 OpenAI 兼容接口。
 
 **核心思想**：所有请求经过"标准化 → 处理 → 反标准化"的流程，实现多提供商的无缝切换和智能路由。
 

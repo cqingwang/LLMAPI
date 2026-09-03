@@ -264,6 +264,12 @@ func (_c *RequestExecutionCreate) SetRequestHeaders(v objects.JSONRawMessage) *R
 	return _c
 }
 
+// SetResponseHeaders sets the "response_headers" field.
+func (_c *RequestExecutionCreate) SetResponseHeaders(v objects.JSONRawMessage) *RequestExecutionCreate {
+	_c.mutation.SetResponseHeaders(v)
+	return _c
+}
+
 // SetRequestURL sets the "request_url" field.
 func (_c *RequestExecutionCreate) SetRequestURL(v string) *RequestExecutionCreate {
 	_c.mutation.SetRequestURL(v)
@@ -505,6 +511,10 @@ func (_c *RequestExecutionCreate) createSpec() (*RequestExecution, *sqlgraph.Cre
 	if value, ok := _c.mutation.RequestHeaders(); ok {
 		_spec.SetField(requestexecution.FieldRequestHeaders, field.TypeJSON, value)
 		_node.RequestHeaders = value
+	}
+	if value, ok := _c.mutation.ResponseHeaders(); ok {
+		_spec.SetField(requestexecution.FieldResponseHeaders, field.TypeJSON, value)
+		_node.ResponseHeaders = value
 	}
 	if value, ok := _c.mutation.RequestURL(); ok {
 		_spec.SetField(requestexecution.FieldRequestURL, field.TypeString, value)
@@ -824,6 +834,24 @@ func (u *RequestExecutionUpsert) UpdateRequestHeaders() *RequestExecutionUpsert 
 // ClearRequestHeaders clears the value of the "request_headers" field.
 func (u *RequestExecutionUpsert) ClearRequestHeaders() *RequestExecutionUpsert {
 	u.SetNull(requestexecution.FieldRequestHeaders)
+	return u
+}
+
+// SetResponseHeaders sets the "response_headers" field.
+func (u *RequestExecutionUpsert) SetResponseHeaders(v objects.JSONRawMessage) *RequestExecutionUpsert {
+	u.Set(requestexecution.FieldResponseHeaders, v)
+	return u
+}
+
+// UpdateResponseHeaders sets the "response_headers" field to the value that was provided on create.
+func (u *RequestExecutionUpsert) UpdateResponseHeaders() *RequestExecutionUpsert {
+	u.SetExcluded(requestexecution.FieldResponseHeaders)
+	return u
+}
+
+// ClearResponseHeaders clears the value of the "response_headers" field.
+func (u *RequestExecutionUpsert) ClearResponseHeaders() *RequestExecutionUpsert {
+	u.SetNull(requestexecution.FieldResponseHeaders)
 	return u
 }
 
@@ -1171,6 +1199,27 @@ func (u *RequestExecutionUpsertOne) UpdateRequestHeaders() *RequestExecutionUpse
 func (u *RequestExecutionUpsertOne) ClearRequestHeaders() *RequestExecutionUpsertOne {
 	return u.Update(func(s *RequestExecutionUpsert) {
 		s.ClearRequestHeaders()
+	})
+}
+
+// SetResponseHeaders sets the "response_headers" field.
+func (u *RequestExecutionUpsertOne) SetResponseHeaders(v objects.JSONRawMessage) *RequestExecutionUpsertOne {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.SetResponseHeaders(v)
+	})
+}
+
+// UpdateResponseHeaders sets the "response_headers" field to the value that was provided on create.
+func (u *RequestExecutionUpsertOne) UpdateResponseHeaders() *RequestExecutionUpsertOne {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.UpdateResponseHeaders()
+	})
+}
+
+// ClearResponseHeaders clears the value of the "response_headers" field.
+func (u *RequestExecutionUpsertOne) ClearResponseHeaders() *RequestExecutionUpsertOne {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.ClearResponseHeaders()
 	})
 }
 
@@ -1689,6 +1738,27 @@ func (u *RequestExecutionUpsertBulk) UpdateRequestHeaders() *RequestExecutionUps
 func (u *RequestExecutionUpsertBulk) ClearRequestHeaders() *RequestExecutionUpsertBulk {
 	return u.Update(func(s *RequestExecutionUpsert) {
 		s.ClearRequestHeaders()
+	})
+}
+
+// SetResponseHeaders sets the "response_headers" field.
+func (u *RequestExecutionUpsertBulk) SetResponseHeaders(v objects.JSONRawMessage) *RequestExecutionUpsertBulk {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.SetResponseHeaders(v)
+	})
+}
+
+// UpdateResponseHeaders sets the "response_headers" field to the value that was provided on create.
+func (u *RequestExecutionUpsertBulk) UpdateResponseHeaders() *RequestExecutionUpsertBulk {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.UpdateResponseHeaders()
+	})
+}
+
+// ClearResponseHeaders clears the value of the "response_headers" field.
+func (u *RequestExecutionUpsertBulk) ClearResponseHeaders() *RequestExecutionUpsertBulk {
+	return u.Update(func(s *RequestExecutionUpsert) {
+		s.ClearResponseHeaders()
 	})
 }
 

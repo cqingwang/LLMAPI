@@ -59,6 +59,8 @@ const (
 	FieldMetricsReasoningDurationMs = "metrics_reasoning_duration_ms"
 	// FieldRequestHeaders holds the string denoting the request_headers field in the database.
 	FieldRequestHeaders = "request_headers"
+	// FieldResponseHeaders holds the string denoting the response_headers field in the database.
+	FieldResponseHeaders = "response_headers"
 	// FieldRequestURL holds the string denoting the request_url field in the database.
 	FieldRequestURL = "request_url"
 	// FieldPassThroughApplied holds the string denoting the pass_through_applied field in the database.
@@ -118,6 +120,7 @@ var Columns = []string{
 	FieldMetricsFirstTokenLatencyMs,
 	FieldMetricsReasoningDurationMs,
 	FieldRequestHeaders,
+	FieldResponseHeaders,
 	FieldRequestURL,
 	FieldPassThroughApplied,
 }

@@ -45,7 +45,9 @@ func (m *persistRequestMiddleware) OnInboundLlmRequest(ctx context.Context, llmR
 		llmRequest.APIFormat,
 	)
 	if err != nil {
-		return nil, err
+		// 请求日志是旁路观测能力，持久化失败不能阻断真实的中转请求。
+		log.Warn(ctx, "Failed to create request log, continuing without persistence", log.Cause(err))
+		return llmRequest, nil
 	}
 
 	m.inbound.state.Request = request

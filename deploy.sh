@@ -136,6 +136,7 @@ prepare_ca_certificates() {
 }
 
 prepare_local_artifacts() {
+  rm -rf ./.dev
   build_local_frontend
   build_local_binary >/dev/null
   prepare_ca_certificates

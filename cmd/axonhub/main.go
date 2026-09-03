@@ -349,7 +349,7 @@ func configGet() {
 }
 
 func showHelp() {
-	fmt.Println("AxonHub AI Gateway")
+	fmt.Println("LiteLLM AI Gateway")
 	fmt.Println("")
 	fmt.Println("Usage:")
 	fmt.Println("  axonhub                    Start the server (default)")

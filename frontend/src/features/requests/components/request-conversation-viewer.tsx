@@ -15,6 +15,7 @@ interface RequestConversationViewerProps {
 }
 
 const CHAR_LIMIT = 1000;
+const COLLAPSED_CHAR_LIMIT = 3000;
 
 const ROLE_LABELS: Record<string, string> = {
   system: 'system',
@@ -67,16 +68,18 @@ function matchesSearch(m: ConversationMessage, q: string): boolean {
 }
 
 /** Toggleable long-text block with "展开全部" / "收起". */
-function CollapseBlock({ text, expandAll, className }: { text: string; expandAll: boolean; className?: string }) {
+function CollapseBlock({ text, expandAll, expandRevision, className }: { text: string; expandAll: boolean; expandRevision: number; className?: string }) {
   const [expanded, setExpanded] = useState(false);
+  useEffect(() => setExpanded(expandAll), [expandAll, expandRevision]);
   const showFull = expandAll || expanded;
   const isLong = text.length > CHAR_LIMIT;
   const collapsed = isLong && !showFull;
+  const displayText = collapsed ? `${text.slice(0, COLLAPSED_CHAR_LIMIT)}\n…` : text;
 
   return (
     <div className={cn('relative', className)}>
       <div className={cn(collapsed && 'max-h-60 overflow-hidden')}>
-        <pre className='text-foreground whitespace-pre-wrap break-words font-mono text-[12.5px] leading-relaxed'>{text}</pre>
+            <pre className='text-foreground whitespace-pre-wrap break-words font-mono text-[12.5px] leading-relaxed'>{displayText}</pre>
       </div>
       {collapsed && <div className='from-background pointer-events-none absolute inset-x-0 bottom-7 h-14 bg-gradient-to-t to-transparent' />}
       {isLong && !expandAll && (
@@ -94,8 +97,9 @@ function CollapseBlock({ text, expandAll, className }: { text: string; expandAll
 
 /** Content part renderer (text / image / other JSON parts). */
 const SKIP_PART_TYPES = new Set(['thinking', 'redacted_thinking', 'tool_use', 'tool_result', 'functionCall', 'functionResponse', 'reasoning']);
+const TEXT_PART_TYPES = new Set(['text', 'input_text', 'output_text']);
 
-function ContentParts({ message, expandAll }: { message: ConversationMessage; expandAll: boolean }) {
+function ContentParts({ message, expandAll, expandRevision }: { message: ConversationMessage; expandAll: boolean; expandRevision: number }) {
   const parts = message.contentParts;
   if (!parts || parts.length === 0) return null;
 
@@ -103,12 +107,15 @@ function ContentParts({ message, expandAll }: { message: ConversationMessage; ex
     <div className='space-y-2'>
       {parts.map((p, i) => {
         if (typeof p === 'string') {
-          return <CollapseBlock key={i} text={p} expandAll={expandAll} />;
+          return <CollapseBlock key={i} text={p} expandAll={expandAll} expandRevision={expandRevision} />;
         }
         if (p && typeof p === 'object') {
           if (typeof p.type === 'string' && SKIP_PART_TYPES.has(p.type)) return null;
-          if (p.type === 'text' && typeof p.text === 'string') {
-            return <CollapseBlock key={i} text={p.text} expandAll={expandAll} />;
+          if (TEXT_PART_TYPES.has(p.type) && typeof p.text === 'string') {
+            return <CollapseBlock key={i} text={p.text} expandAll={expandAll} expandRevision={expandRevision} />;
+          }
+          if (typeof p.text === 'string') {
+            return <CollapseBlock key={i} text={p.text} expandAll={expandAll} expandRevision={expandRevision} />;
           }
           if (p.type === 'image_url' || p.type === 'image' || p.image_url) {
             const url = p.image_url?.url || p.url || '';
@@ -141,11 +148,14 @@ interface ToolCallCardProps {
   call: { id?: string; name: string; arguments: string };
   resultIndex?: number;
   showArgs: boolean;
+  expandAll: boolean;
+  expandRevision: number;
   jumpTo: (index: number) => void;
 }
 
-function ToolCallCard({ call, resultIndex, showArgs, jumpTo }: ToolCallCardProps) {
+function ToolCallCard({ call, resultIndex, showArgs, expandAll, expandRevision, jumpTo }: ToolCallCardProps) {
   const [argsOpen, setArgsOpen] = useState(false);
+  useEffect(() => setArgsOpen(expandAll), [expandAll, expandRevision]);
   return (
     <div className='border-purple-500/40 bg-muted/30 border-l-4 rounded-md border p-2.5 pl-3'>
       <div className='flex flex-wrap items-center gap-2'>
@@ -184,10 +194,12 @@ function ToolCallCard({ call, resultIndex, showArgs, jumpTo }: ToolCallCardProps
 interface ToolResultCardProps {
   callIndex?: number;
   content: string;
+  expandAll: boolean;
+  expandRevision: number;
   jumpTo: (index: number) => void;
 }
 
-function ToolResultCard({ callIndex, content, jumpTo }: ToolResultCardProps) {
+function ToolResultCard({ callIndex, content, expandAll, expandRevision, jumpTo }: ToolResultCardProps) {
   return (
     <div className='border-orange-500/40 bg-muted/30 border-l-4 rounded-md border p-2.5 pl-3'>
       <div className='mb-1 flex flex-wrap items-center gap-2'>
@@ -203,7 +215,7 @@ function ToolResultCard({ callIndex, content, jumpTo }: ToolResultCardProps) {
           </button>
         )}
       </div>
-      <CollapseBlock text={content} expandAll={false} />
+      <CollapseBlock text={content} expandAll={expandAll} expandRevision={expandRevision} />
     </div>
   );
 }
@@ -214,6 +226,7 @@ interface MessageCardProps {
   showToolArgs: boolean;
   showToolResult: boolean;
   expandAll: boolean;
+  expandRevision: number;
   toolCallByCallId: Map<string, number>;
   toolResultByCallId: Map<string, number>;
   jumpTo: (index: number) => void;
@@ -227,6 +240,7 @@ function MessageCard({
   showToolArgs,
   showToolResult,
   expandAll,
+  expandRevision,
   toolCallByCallId,
   toolResultByCallId,
   jumpTo,
@@ -248,9 +262,9 @@ function MessageCard({
   // Tool messages render their content only inside the TOOL RESULT card.
   if (role !== 'tool') {
     if (message.contentParts && message.contentParts.length > 0) {
-      body = <ContentParts message={message} expandAll={expandAll} />;
+      body = <ContentParts message={message} expandAll={expandAll} expandRevision={expandRevision} />;
     } else if (message.content) {
-      body = <CollapseBlock text={message.content} expandAll={expandAll} />;
+      body = <CollapseBlock text={message.content} expandAll={expandAll} expandRevision={expandRevision} />;
     }
   }
 
@@ -261,7 +275,7 @@ function MessageCard({
           <div className='mb-1 text-[11px] font-semibold tracking-wider text-amber-600 dark:text-amber-400'>◆ REASONING</div>
           <details className='group'>
             <summary className='text-muted-foreground cursor-pointer text-[11.5px] underline decoration-dotted underline-offset-2'>展开思考过程</summary>
-            <CollapseBlock text={message.reasoning} expandAll={expandAll} className='mt-1.5' />
+            <CollapseBlock text={message.reasoning} expandAll={expandAll} expandRevision={expandRevision} className='mt-1.5' />
           </details>
         </div>
         {body}
@@ -280,6 +294,8 @@ function MessageCard({
               call={tc}
               resultIndex={tc.id ? toolResultByCallId.get(tc.id) : undefined}
               showArgs={showToolArgs}
+              expandAll={expandAll}
+              expandRevision={expandRevision}
               jumpTo={jumpTo}
             />
           ))}
@@ -293,7 +309,7 @@ function MessageCard({
     body = (
       <div className='space-y-2.5'>
         {body}
-        <ToolResultCard callIndex={callSrc} content={message.content} jumpTo={jumpTo} />
+        <ToolResultCard callIndex={callSrc} content={message.content} expandAll={expandAll} expandRevision={expandRevision} jumpTo={jumpTo} />
       </div>
     );
   }
@@ -331,10 +347,13 @@ function MessageCard({
 
 interface ToolCardProps {
   tool: ConversationTool;
+  expandAll: boolean;
+  expandRevision: number;
 }
 
-function ToolCard({ tool }: ToolCardProps) {
+function ToolCard({ tool, expandAll, expandRevision }: ToolCardProps) {
   const [open, setOpen] = useState(false);
+  useEffect(() => setOpen(expandAll), [expandAll, expandRevision]);
   const params = tool.parameters && typeof tool.parameters === 'object' ? (tool.parameters as Record<string, any>) : {};
   const required = Array.isArray(params.required) ? params.required.join(', ') : '';
   const propCount = params.properties ? Object.keys(params.properties).length : 0;
@@ -396,6 +415,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
   const [showToolResult, setShowToolResult] = useState(true);
   const [showSystem, setShowSystem] = useState(true);
   const [expandAllContent, setExpandAllContent] = useState(false);
+  const [expandRevision, setExpandRevision] = useState(0);
   const [rawOpenIndex, setRawOpenIndex] = useState<number | null>(null);
   const [showBackTop, setShowBackTop] = useState(false);
 
@@ -502,22 +522,16 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
   const totalToolCalls = data.messages.reduce((s, m) => s + (m.toolCalls ? m.toolCalls.length : 0), 0);
 
   const toggleRaw = (index: number) => setRawOpenIndex((cur) => (cur === index ? null : index));
+  const toggleExpandAll = () => {
+    setExpandAllContent((value) => !value);
+    setExpandRevision((value) => value + 1);
+  };
 
   return (
-    <div ref={rootRef} className={cn('space-y-4', className)}>
+    <div ref={rootRef} className={cn('space-y-2.5', className)}>
       {/* Toolbar */}
-      <div className='border-border bg-muted/20 sticky top-0 z-10 rounded-lg border p-3 backdrop-blur'>
-        <div className='flex flex-wrap items-center gap-2.5'>
-          <div className='flex items-center gap-2'>
-            <span className='h-2.5 w-2.5 rounded-full bg-blue-500' />
-            <span className='text-sm font-semibold'>{t('requests.conversation.title')}</span>
-          </div>
-          {data.model && (
-            <span className='border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full border px-2.5 py-0.5 font-mono text-[11.5px]'>
-              {data.model}
-            </span>
-          )}
-          <div className='ml-auto flex flex-wrap items-center gap-2'>
+      <div className='border-border bg-muted/20 sticky top-0 z-10 rounded-lg border p-2 backdrop-blur'>
+        <div className='flex flex-wrap items-center justify-end gap-1.5'>
             <div className='relative'>
               <Search className='text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2' />
               <Input
@@ -555,16 +569,15 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
               <input type='checkbox' className='accent-blue-500' checked={showSystem} onChange={(e) => setShowSystem(e.target.checked)} />
               system
             </label>
-            <Button variant='outline' size='sm' className='h-8 px-2.5 text-xs' onClick={() => setExpandAllContent((v) => !v)}>
+            <Button variant='outline' size='sm' className='h-8 px-2.5 text-xs' onClick={toggleExpandAll}>
               {expandAllContent ? <ChevronsDownUp className='h-3.5 w-3.5' /> : <ChevronsUpDown className='h-3.5 w-3.5' />}
               {expandAllContent ? t('requests.conversation.collapseAll') : t('requests.conversation.expandAll')}
             </Button>
           </div>
         </div>
-      </div>
 
       {/* Stats */}
-      <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5'>
+      <div className='grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10'>
         <Stat label='Model' value={data.model ? <small className='text-xs'>{data.model}</small> : '—'} />
         <Stat label={t('requests.conversation.statMessages')} value={fmtNum(data.messages.length)} />
         <Stat label={t('requests.conversation.statTools')} value={fmtNum(data.tools.length)} jumpId='conv-tools' onJump={jumpTo} />
@@ -589,7 +602,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
       </div>
 
       {/* Layout */}
-      <div className='grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]'>
+      <div className='grid grid-cols-1 gap-2.5 lg:grid-cols-[210px_minmax(0,1fr)]'>
         {/* Sidebar jump */}
         <div className='hidden lg:block'>
           <div className='border-border bg-muted/20 sticky top-[72px] max-h-[calc(100vh-100px)] overflow-y-auto rounded-lg border p-2.5'>
@@ -615,9 +628,9 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
         </div>
 
         {/* Main */}
-        <div className='min-w-0 space-y-5'>
+        <div className='min-w-0 space-y-3'>
           <div>
-            <div className='text-muted-foreground mb-2.5 text-[13px] font-semibold'>
+            <div className='text-muted-foreground mb-1.5 text-[13px] font-semibold'>
               Messages <span className='text-muted-foreground/70'>({fmtNum(visibleMessages.length)})</span>
             </div>
             {visibleMessages.length === 0 ? (
@@ -625,7 +638,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
                 <p className='text-muted-foreground text-sm'>{t('requests.conversation.noMatch')}</p>
               </div>
             ) : (
-              <div className='space-y-3'>
+              <div className='space-y-2'>
                 {visibleMessages.map((m) => (
                   <MessageCard
                     key={m.index}
@@ -634,6 +647,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
                     showToolArgs={showToolArgs}
                     showToolResult={showToolResult}
                     expandAll={expandAllContent}
+                    expandRevision={expandRevision}
                     toolCallByCallId={toolCallByCallId}
                     toolResultByCallId={toolResultByCallId}
                     jumpTo={jumpTo}
@@ -646,7 +660,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
           </div>
 
           <div id='conv-tools' className='scroll-mt-24'>
-            <div className='text-muted-foreground mb-2.5 text-[13px] font-semibold'>
+            <div className='text-muted-foreground mb-1.5 text-[13px] font-semibold'>
               Tools <span className='text-muted-foreground/70'>({fmtNum(data.tools.length)})</span>
             </div>
             {data.tools.length === 0 ? (
@@ -656,7 +670,7 @@ export function RequestConversationViewer({ body, format, className }: RequestCo
             ) : (
               <div className='space-y-2'>
                 {data.tools.map((tool, i) => (
-                  <ToolCard key={tool.name || i} tool={tool} />
+                  <ToolCard key={tool.name || i} tool={tool} expandAll={expandAllContent} expandRevision={expandRevision} />
                 ))}
               </div>
             )}

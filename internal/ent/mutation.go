@@ -18834,6 +18834,8 @@ type RequestExecutionMutation struct {
 	addmetrics_reasoning_duration_ms  *int64
 	request_headers                   *objects.JSONRawMessage
 	appendrequest_headers             objects.JSONRawMessage
+	response_headers                  *objects.JSONRawMessage
+	appendresponse_headers            objects.JSONRawMessage
 	request_url                       *string
 	pass_through_applied              *bool
 	clearedFields                     map[string]struct{}
@@ -20025,6 +20027,71 @@ func (m *RequestExecutionMutation) ResetRequestHeaders() {
 	delete(m.clearedFields, requestexecution.FieldRequestHeaders)
 }
 
+// SetResponseHeaders sets the "response_headers" field.
+func (m *RequestExecutionMutation) SetResponseHeaders(orm objects.JSONRawMessage) {
+	m.response_headers = &orm
+	m.appendresponse_headers = nil
+}
+
+// ResponseHeaders returns the value of the "response_headers" field in the mutation.
+func (m *RequestExecutionMutation) ResponseHeaders() (r objects.JSONRawMessage, exists bool) {
+	v := m.response_headers
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldResponseHeaders returns the old "response_headers" field's value of the RequestExecution entity.
+// If the RequestExecution object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RequestExecutionMutation) OldResponseHeaders(ctx context.Context) (v objects.JSONRawMessage, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldResponseHeaders is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldResponseHeaders requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldResponseHeaders: %w", err)
+	}
+	return oldValue.ResponseHeaders, nil
+}
+
+// AppendResponseHeaders adds orm to the "response_headers" field.
+func (m *RequestExecutionMutation) AppendResponseHeaders(orm objects.JSONRawMessage) {
+	m.appendresponse_headers = append(m.appendresponse_headers, orm...)
+}
+
+// AppendedResponseHeaders returns the list of values that were appended to the "response_headers" field in this mutation.
+func (m *RequestExecutionMutation) AppendedResponseHeaders() (objects.JSONRawMessage, bool) {
+	if len(m.appendresponse_headers) == 0 {
+		return nil, false
+	}
+	return m.appendresponse_headers, true
+}
+
+// ClearResponseHeaders clears the value of the "response_headers" field.
+func (m *RequestExecutionMutation) ClearResponseHeaders() {
+	m.response_headers = nil
+	m.appendresponse_headers = nil
+	m.clearedFields[requestexecution.FieldResponseHeaders] = struct{}{}
+}
+
+// ResponseHeadersCleared returns if the "response_headers" field was cleared in this mutation.
+func (m *RequestExecutionMutation) ResponseHeadersCleared() bool {
+	_, ok := m.clearedFields[requestexecution.FieldResponseHeaders]
+	return ok
+}
+
+// ResetResponseHeaders resets all changes to the "response_headers" field.
+func (m *RequestExecutionMutation) ResetResponseHeaders() {
+	m.response_headers = nil
+	m.appendresponse_headers = nil
+	delete(m.clearedFields, requestexecution.FieldResponseHeaders)
+}
+
 // SetRequestURL sets the "request_url" field.
 func (m *RequestExecutionMutation) SetRequestURL(s string) {
 	m.request_url = &s
@@ -20225,7 +20292,7 @@ func (m *RequestExecutionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RequestExecutionMutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 24)
 	if m.created_at != nil {
 		fields = append(fields, requestexecution.FieldCreatedAt)
 	}
@@ -20289,6 +20356,9 @@ func (m *RequestExecutionMutation) Fields() []string {
 	if m.request_headers != nil {
 		fields = append(fields, requestexecution.FieldRequestHeaders)
 	}
+	if m.response_headers != nil {
+		fields = append(fields, requestexecution.FieldResponseHeaders)
+	}
 	if m.request_url != nil {
 		fields = append(fields, requestexecution.FieldRequestURL)
 	}
@@ -20345,6 +20415,8 @@ func (m *RequestExecutionMutation) Field(name string) (ent.Value, bool) {
 		return m.MetricsReasoningDurationMs()
 	case requestexecution.FieldRequestHeaders:
 		return m.RequestHeaders()
+	case requestexecution.FieldResponseHeaders:
+		return m.ResponseHeaders()
 	case requestexecution.FieldRequestURL:
 		return m.RequestURL()
 	case requestexecution.FieldPassThroughApplied:
@@ -20400,6 +20472,8 @@ func (m *RequestExecutionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldMetricsReasoningDurationMs(ctx)
 	case requestexecution.FieldRequestHeaders:
 		return m.OldRequestHeaders(ctx)
+	case requestexecution.FieldResponseHeaders:
+		return m.OldResponseHeaders(ctx)
 	case requestexecution.FieldRequestURL:
 		return m.OldRequestURL(ctx)
 	case requestexecution.FieldPassThroughApplied:
@@ -20560,6 +20634,13 @@ func (m *RequestExecutionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetRequestHeaders(v)
 		return nil
+	case requestexecution.FieldResponseHeaders:
+		v, ok := value.(objects.JSONRawMessage)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetResponseHeaders(v)
+		return nil
 	case requestexecution.FieldRequestURL:
 		v, ok := value.(string)
 		if !ok {
@@ -20703,6 +20784,9 @@ func (m *RequestExecutionMutation) ClearedFields() []string {
 	if m.FieldCleared(requestexecution.FieldRequestHeaders) {
 		fields = append(fields, requestexecution.FieldRequestHeaders)
 	}
+	if m.FieldCleared(requestexecution.FieldResponseHeaders) {
+		fields = append(fields, requestexecution.FieldResponseHeaders)
+	}
 	if m.FieldCleared(requestexecution.FieldRequestURL) {
 		fields = append(fields, requestexecution.FieldRequestURL)
 	}
@@ -20755,6 +20839,9 @@ func (m *RequestExecutionMutation) ClearField(name string) error {
 		return nil
 	case requestexecution.FieldRequestHeaders:
 		m.ClearRequestHeaders()
+		return nil
+	case requestexecution.FieldResponseHeaders:
+		m.ClearResponseHeaders()
 		return nil
 	case requestexecution.FieldRequestURL:
 		m.ClearRequestURL()
@@ -20829,6 +20916,9 @@ func (m *RequestExecutionMutation) ResetField(name string) error {
 		return nil
 	case requestexecution.FieldRequestHeaders:
 		m.ResetRequestHeaders()
+		return nil
+	case requestexecution.FieldResponseHeaders:
+		m.ResetResponseHeaders()
 		return nil
 	case requestexecution.FieldRequestURL:
 		m.ResetRequestURL()

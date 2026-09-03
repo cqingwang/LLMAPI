@@ -1,7 +1,7 @@
 # Fine-grained Permission
 
 ## Overview
-AxonHub provides role-based access control (RBAC) so that organizations can tailor API access, feature visibility, and resource quotas to specific teams or workloads. Fine-grained rules allow administrators to enforce least-privilege policies, protect sensitive data, and monitor usage across projects.
+LiteLLM provides role-based access control (RBAC) so that organizations can tailor API access, feature visibility, and resource quotas to specific teams or workloads. Fine-grained rules allow administrators to enforce least-privilege policies, protect sensitive data, and monitor usage across projects.
 
 ## Key Concepts
 - **Roles** – Collections of permissions that define a user or API key's capabilities.

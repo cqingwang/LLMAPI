@@ -87,6 +87,10 @@ func (RequestExecution) Fields() []ent.Field {
 		field.JSON("request_headers", objects.JSONRawMessage{}).
 			Optional().
 			Comment("Request headers"),
+		// Response headers returned by the upstream provider.
+		field.JSON("response_headers", objects.JSONRawMessage{}).
+			Optional().
+			Comment("Response headers"),
 		// The actual upstream request URL sent to the provider.
 		field.String("request_url").
 			Optional().

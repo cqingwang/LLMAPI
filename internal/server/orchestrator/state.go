@@ -63,6 +63,9 @@ type PersistenceState struct {
 	// RawProviderResponse stores the raw provider response for non-stream response pass-through.
 	RawProviderResponse *httpclient.Response
 
+	// ResponseStatusCode 保存渠道 HTTP 状态码，用于请求详情和执行日志。
+	ResponseStatusCode int
+
 	// RawProviderRequest stores the actual outbound provider request for pass-through checks.
 	RawProviderRequest *httpclient.Request
 

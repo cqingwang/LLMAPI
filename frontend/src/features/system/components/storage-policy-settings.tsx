@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Loader2, Save, Play } from 'lucide-react';
+import { Loader2, Save, Play, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   AlertDialog,
@@ -24,6 +24,7 @@ import {
   useStoragePolicy,
   useUpdateStoragePolicy,
   useTriggerGcCleanup,
+  useClearAllRequestRecords,
   usePreviewGcCleanup,
   CleanupOption,
   GcCleanupPreviewItem,
@@ -36,6 +37,7 @@ export function StoragePolicySettings() {
   const { data: storagePolicy, isLoading: isLoadingStoragePolicy } = useStoragePolicy();
   const updateStoragePolicy = useUpdateStoragePolicy();
   const triggerGcCleanup = useTriggerGcCleanup();
+  const clearAllRequestRecords = useClearAllRequestRecords();
   const previewGcCleanup = usePreviewGcCleanup();
 
   const [storagePolicyState, setStoragePolicyState] = useState({
@@ -189,7 +191,8 @@ export function StoragePolicySettings() {
             <CardTitle>{t('system.storage.policy.title')}</CardTitle>
             <CardDescription>{t('system.storage.policy.description')}</CardDescription>
           </div>
-          <AlertDialog onOpenChange={handleDialogOpenChange}>
+          <div className='flex flex-wrap items-center justify-end gap-2'>
+            <AlertDialog onOpenChange={handleDialogOpenChange}>
             <AlertDialogTrigger asChild>
               <Button
                 variant='outline'
@@ -283,7 +286,37 @@ export function StoragePolicySettings() {
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
-          </AlertDialog>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant='destructive' size='sm' disabled={clearAllRequestRecords.isPending || isLoading}>
+                  {clearAllRequestRecords.isPending ? (
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  ) : (
+                    <Trash2 className='mr-2 h-4 w-4' />
+                  )}
+                  {t('system.storage.policy.clearAllRequestRecords')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('system.storage.policy.clearAllRequestRecordsTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>{t('system.storage.policy.clearAllRequestRecordsDescription')}</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('system.storage.policy.runCleanupCancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                    onClick={() => clearAllRequestRecords.mutate()}
+                    disabled={clearAllRequestRecords.isPending}
+                  >
+                    {clearAllRequestRecords.isPending ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : null}
+                    {t('system.storage.policy.clearAllRequestRecordsConfirm')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardHeader>
         <CardContent className='space-y-6'>
           <div className='flex items-center justify-between' id='storage-enabled-switch'>

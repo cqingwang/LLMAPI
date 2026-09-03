@@ -1,6 +1,6 @@
 <div align="center">
 
-# AxonHub - All-in-one AI Development Platform
+# LiteLLM - All-in-one AI Development Platform
 ### Use any SDK. Access any model. Zero code changes.
 
 <a href="https://trendshift.io/repositories/16225" target="_blank"><img src="https://trendshift.io/api/badge/repositories/16225" alt="looplj%2Faxonhub | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -53,7 +53,7 @@
         Thank you to Krill AI for sponsoring this project. Krill provides official, stable, high-speed API relay services for GPT, Claude, Gemini, and a wide range of Chinese models, with enterprise customization, invoicing support, and dedicated technical support 16 hours a day, 7 days a week. Its optimized WebSocket connection can deliver a faster time to first token.
       </p>
       <p align="left">
-        Register through <a href="https://lj.s.gy/jKk8uU" target="_blank">this link</a> and enter the <code>AxonHub</code> coupon code when topping up to receive 23% off your first Codex plan purchase.
+        Register through <a href="https://lj.s.gy/jKk8uU" target="_blank">this link</a> and enter the <code>LiteLLM</code> coupon code when topping up to receive 23% off your first Codex plan purchase.
       </p>
     </td>
   </tr>
@@ -80,7 +80,7 @@
         </a>
       </td>
       <td valign="middle">
-        Qiniu Cloud AI is an enterprise-grade LLM MaaS platform operated by Qiniu Cloud (02567.HK), providing one-stop access to 150+ mainstream models worldwide. It supports major model provider protocols and text, image, audio, video, file processing, and other multimodal capabilities, serving more than 1.69 million enterprises and developers. As an exclusive benefit for AxonHub users, <a href="https://lj.s.gy/8HNo22" target="_blank">register through this link</a> to receive 12 million free tokens for enterprise users or 3 million free tokens for developers.
+        Qiniu Cloud AI is an enterprise-grade LLM MaaS platform operated by Qiniu Cloud (02567.HK), providing one-stop access to 150+ mainstream models worldwide. It supports major model provider protocols and text, image, audio, video, file processing, and other multimodal capabilities, serving more than 1.69 million enterprises and developers. As an exclusive benefit for LiteLLM users, <a href="https://lj.s.gy/8HNo22" target="_blank">register through this link</a> to receive 12 million free tokens for enterprise users or 3 million free tokens for developers.
       </td>
     </tr>
     <tr>
@@ -92,7 +92,7 @@
         </a>
       </td>
       <td valign="middle">
-        FennoAI is a highly stable, high-performance API relay provider for enterprise R&amp;D teams and developers. It is compatible with the OpenAI and Anthropic protocols and integrates seamlessly with Codex, Claude Code, OpenCode, and other mainstream AI coding tools. The platform supports enterprise-grade reliability at a scale of hundreds of billions of tokens per day, as well as business-to-business settlement and invoicing for domestic and international entities. As an exclusive benefit for AxonHub users, <a href="https://lj.s.gy/Wo8IuN" target="_blank">purchase a subscription through this link</a> for just $1.99 and receive $50 worth of Coding Plan credits. Referral rewards are also available, with up to 20% commission for successful referrals.
+        FennoAI is a highly stable, high-performance API relay provider for enterprise R&amp;D teams and developers. It is compatible with the OpenAI and Anthropic protocols and integrates seamlessly with Codex, Claude Code, OpenCode, and other mainstream AI coding tools. The platform supports enterprise-grade reliability at a scale of hundreds of billions of tokens per day, as well as business-to-business settlement and invoicing for domestic and international entities. As an exclusive benefit for LiteLLM users, <a href="https://lj.s.gy/Wo8IuN" target="_blank">purchase a subscription through this link</a> for just $1.99 and receive $50 worth of Coding Plan credits. Referral rewards are also available, with up to 20% commission for successful referrals.
       </td>
     </tr>
     <tr>
@@ -104,7 +104,7 @@
         </a>
       </td>
       <td valign="middle">
-        Try AxonHub with zero local setup on Bloome:
+        Try LiteLLM with zero local setup on Bloome:
         <a href="https://bloome.im/app?ref=MjgMzmCY&utm_medium=github&utm_source=looplj-axonhub-ivor-202606" target="_blank">Quick start</a>,
         one click from your browser or phone, easy to share with your team.
       </td>
@@ -120,9 +120,9 @@
 
 ### All-in-one AI Development Platform
 
-**AxonHub is the AI gateway that lets you switch between model providers without changing a single line of code.**
+**LiteLLM is the AI gateway that lets you switch between model providers without changing a single line of code.**
 
-Whether you're using OpenAI SDK, Anthropic SDK, or any AI SDK, AxonHub transparently translates your requests to work with any supported model provider. No refactoring, no SDK swaps—just change a configuration and you're done.
+Whether you're using OpenAI SDK, Anthropic SDK, or any AI SDK, LiteLLM transparently translates your requests to work with any supported model provider. No refactoring, no SDK swaps—just change a configuration and you're done.
 
 **What it solves:**
 - 🔒 **Vendor lock-in** - Switch from GPT-4 to Claude or Gemini instantly
@@ -131,7 +131,7 @@ Whether you're using OpenAI SDK, Anthropic SDK, or any AI SDK, AxonHub transpare
 - 💸 **Cost control** - Real-time usage tracking and budget management
 
 <div align="center">
-  <img src="docs/axonhub-architecture-light.svg" alt="AxonHub Architecture" width="700"/>
+  <img src="docs/axonhub-architecture-light.svg" alt="LiteLLM Architecture" width="700"/>
 </div>
 
 ---
@@ -160,7 +160,7 @@ For detailed technical documentation, API references, architecture design, and m
 
 ## 🎯 Demo
 
-Try AxonHub live at our [demo instance](https://axonhub.onrender.com)!
+Try LiteLLM live at our [demo instance](https://axonhub.onrender.com)!
 
 **Note**：The demo instance currently configures Zhipu and OpenRouter free models.
 
@@ -175,7 +175,7 @@ Try AxonHub live at our [demo instance](https://axonhub.onrender.com)!
 
 ### 📸 Screenshots
 
-Here are some screenshots of AxonHub in action:
+Here are some screenshots of LiteLLM in action:
 
 <table>
   <tr>
@@ -277,18 +277,18 @@ cd axonhub_*
 # First run: Follow the setup wizard to initialize the system (create admin account, password must be at least 6 characters)
 ```
 
-That's it! Now configure your first AI channel and start calling models through AxonHub.
+That's it! Now configure your first AI channel and start calling models through LiteLLM.
 
 ### Zero-Code Migration Example
 
-**Your existing code works without any changes.** Just point your SDK to AxonHub:
+**Your existing code works without any changes.** Just point your SDK to LiteLLM:
 
 ```python
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:8090/v1",  # Point to AxonHub
-    api_key="your-axonhub-api-key"        # Use AxonHub API key
+    base_url="http://localhost:8090/v1",  # Point to LiteLLM
+    api_key="your-axonhub-api-key"        # Use LiteLLM API key
 )
 
 # Call Claude using OpenAI SDK!
@@ -302,7 +302,7 @@ Switch models by changing one line: `model="gpt-4"` → `model="claude-3-5-sonne
 
 ### 1-click Deploy to Render
 
-Deploy AxonHub with 1-click on [Render](https://render.com) for free.
+Deploy LiteLLM with 1-click on [Render](https://render.com) for free.
 
 <div>
 
@@ -338,13 +338,13 @@ Perfect for individual developers and small teams. No complex configuration requ
 
    # Run directly - default SQLite database
 
-   # Install AxonHub to system
+   # Install LiteLLM to system
    sudo ./install.sh
 
-   # Start AxonHub service
+   # Start LiteLLM service
    ./start.sh
 
-   # Stop AxonHub service
+   # Stop LiteLLM service
    ./stop.sh
    ```
 
@@ -361,7 +361,7 @@ For production environments, high availability, and enterprise deployments.
 
 #### Database Support
 
-AxonHub supports multiple databases to meet different scale deployment needs:
+LiteLLM supports multiple databases to meet different scale deployment needs:
 
 | Database       | Supported Versions | Recommended Scenario                             | Auto Migration | Links                                                       |
 | -------------- | ------------------ | ------------------------------------------------ | -------------- | ----------------------------------------------------------- |
@@ -375,13 +375,13 @@ AxonHub supports multiple databases to meet different scale deployment needs:
 
 #### Configuration
 
-AxonHub uses YAML configuration files with environment variable override support:
+LiteLLM uses YAML configuration files with environment variable override support:
 
 ```yaml
 # config.yml
 server:
   port: 8090
-  name: "AxonHub"
+  name: "LiteLLM"
   debug: false
 
 db:
@@ -424,7 +424,7 @@ docker-compose ps
 
 #### Helm Kubernetes Deployment
 
-Deploy AxonHub on Kubernetes using the official Helm chart:
+Deploy LiteLLM on Kubernetes using the official Helm chart:
 
 ```bash
 # Quick installation
@@ -435,7 +435,7 @@ helm install axonhub ./deploy/helm
 # Production deployment
 helm install axonhub ./deploy/helm -f ./deploy/helm/values-production.yaml
 
-# Access AxonHub
+# Access LiteLLM
 kubectl port-forward svc/axonhub 8090:8090
 # Visit http://localhost:8090
 ```
@@ -471,7 +471,7 @@ sudo ./install.sh
 axonhub config check
 
 # Start service
-#  For simplicity, we recommend managing AxonHub with the helper scripts:
+#  For simplicity, we recommend managing LiteLLM with the helper scripts:
 
 # Start
 ./start.sh
@@ -486,12 +486,12 @@ axonhub config check
 
 ### Unified API Overview
 
-AxonHub provides a unified API gateway that supports both OpenAI Chat Completions and Anthropic Messages APIs. This means you can:
+LiteLLM provides a unified API gateway that supports both OpenAI Chat Completions and Anthropic Messages APIs. This means you can:
 
 - **Use OpenAI API to call Anthropic models** - Keep using your OpenAI SDK while accessing Claude models
 - **Use Anthropic API to call OpenAI models** - Use Anthropic's native API format with GPT models
 - **Use Gemini API to call OpenAI models** - Use Gemini's native API format with GPT models
-- **Automatic API translation** - AxonHub handles format conversion automatically
+- **Automatic API translation** - LiteLLM handles format conversion automatically
 - **Zero code changes** - Your existing OpenAI or Anthropic client code continues to work
 
 ### 1. Initial Setup
@@ -517,7 +517,7 @@ Configure AI provider channels in the management interface. For detailed informa
 
 ### 3. Model Management
 
-AxonHub provides a flexible model management system that supports mapping abstract models to specific channels and model implementations through Model Associations. This enables:
+LiteLLM provides a flexible model management system that supports mapping abstract models to specific channels and model implementations through Model Associations. This enables:
 
 - **Unified Model Interface** - Use abstract model IDs (e.g., `gpt-4`, `claude-3-opus`) instead of channel-specific names
 - **Intelligent Channel Selection** - Automatically route requests to optimal channels based on association rules and load balancing
@@ -528,7 +528,7 @@ For comprehensive information on model management, including association types, 
 
 ### 4. Create API Keys
 
-Create API keys to authenticate your applications with AxonHub. Each API key can be configured with multiple profiles that define:
+Create API keys to authenticate your applications with LiteLLM. Each API key can be configured with multiple profiles that define:
 
 - **Model Mappings** - Transform user-requested models to actual available models using exact match or regex patterns
 - **Channel Restrictions** - Limit which channels an API key can use by channel IDs or tags
@@ -539,7 +539,7 @@ For detailed information on API key profiles, including configuration examples, 
 
 ### 5. AI Coding Tools Integration
 
-See the dedicated guides for detailed setup steps, troubleshooting, and tips on combining these tools with AxonHub model profiles:
+See the dedicated guides for detailed setup steps, troubleshooting, and tips on combining these tools with LiteLLM model profiles:
 - [OpenCode Integration Guide](docs/en/guides/opencode-integration.md)
 - [Claude Code Integration Guide](docs/en/guides/claude-code-integration.md)
 - [Codex Integration Guide](docs/en/guides/codex-integration.md)
@@ -580,10 +580,10 @@ This project is licensed under multiple licenses (Apache-2.0 and LGPL-3.0). See 
 
 <div align="center">
 
-**AxonHub** - All-in-one AI Development Platform, making AI development simpler
+**LiteLLM** - All-in-one AI Development Platform, making AI development simpler
 
 [🏠 Homepage](https://github.com/looplj/axonhub) • [📚 Documentation](https://deepwiki.com/looplj/axonhub) • [🐛 Issue Feedback](https://github.com/looplj/axonhub/issues)
 
-Built with ❤️ by the AxonHub team
+Built with ❤️ by the LiteLLM team
 
 </div>

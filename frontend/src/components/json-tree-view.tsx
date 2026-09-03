@@ -34,10 +34,14 @@ const JsonExpandContext = React.createContext<{
   globalStringExpanded: boolean;
   hideArrayIndices: boolean;
   expandDepth: number | 'all';
+  compactArrays: boolean;
+  joinArrayValues: boolean;
 }>({
   globalStringExpanded: false,
   hideArrayIndices: false,
   expandDepth: 2,
+  compactArrays: false,
+  joinArrayValues: false,
 });
 
 type JsonViewerProps = {
@@ -50,6 +54,10 @@ type JsonViewerProps = {
   hideArrayIndices?: boolean;
   /** When true, all string values render their full content. */
   globalStringExpanded?: boolean;
+  /** 将数组的每个直接元素按紧凑的单行 JSON 值展示。 */
+  compactArrays?: boolean;
+  /** 将数组值以分隔符拼接，适合 HTTP 头的多值字段。 */
+  joinArrayValues?: boolean;
   className?: string;
 };
 
@@ -60,10 +68,12 @@ export function JsonViewer({
   expandDepth = 2,
   hideArrayIndices = false,
   globalStringExpanded = false,
+  compactArrays = false,
+  joinArrayValues = false,
   className,
 }: JsonViewerProps) {
   return (
-    <JsonExpandContext.Provider value={{ globalStringExpanded, hideArrayIndices, expandDepth }}>
+    <JsonExpandContext.Provider value={{ globalStringExpanded, hideArrayIndices, expandDepth, compactArrays, joinArrayValues }}>
       <TooltipProvider>
         <div className={cn('w-full min-w-0 overflow-x-hidden [contain:inline-size] font-mono text-sm', className)}>
           <JsonNode name={rootName} data={data} isRoot={true} defaultExpanded={defaultExpanded} />
@@ -84,7 +94,7 @@ type JsonNodeProps = {
 };
 
 function JsonNode({ name, data, parentData, isRoot = false, isArrayItem = false, defaultExpanded = true, level = 0 }: JsonNodeProps) {
-  const { hideArrayIndices, expandDepth } = React.useContext(JsonExpandContext);
+  const { hideArrayIndices, expandDepth, compactArrays, joinArrayValues } = React.useContext(JsonExpandContext);
   const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
   const [isCopied, setIsCopied] = React.useState(false);
 
@@ -98,10 +108,15 @@ function JsonNode({ name, data, parentData, isRoot = false, isArrayItem = false,
   };
 
   const dataType = data === null ? 'null' : Array.isArray(data) ? 'array' : typeof data;
+  const compactArrayItem = isArrayItem && compactArrays;
+  const compactSingleItemArray = compactArrays && dataType === 'array' && data.length <= 1;
+  const joinCurrentArray = joinArrayValues && dataType === 'array';
   const isExpandable =
     data !== null &&
     data !== undefined &&
     !(data instanceof Date) &&
+    !compactArrayItem &&
+    !compactSingleItemArray &&
     (dataType === 'object' || dataType === 'array');
   const itemCount =
     isExpandable && data !== null && data !== undefined ? Object.keys(data).length : 0;
@@ -155,7 +170,13 @@ function JsonNode({ name, data, parentData, isRoot = false, isArrayItem = false,
         {/* Leaf value — takes remaining width, allows text to truncate */}
         {!isExpandable && (
           <div className='min-w-0 flex-1 overflow-hidden'>
-            <JsonValue name={name} data={data} parentData={parentData} />
+            <JsonValue
+              name={name}
+              data={joinCurrentArray ? data.map((item: unknown) => (typeof item === 'string' ? item : JSON.stringify(item))).join(' | ') : compactSingleItemArray || (compactArrayItem && typeof data === 'object') ? JSON.stringify(data) : data}
+              parentData={parentData}
+              parseJsonValue={!joinCurrentArray && !compactSingleItemArray && !(compactArrayItem && typeof data === 'object')}
+              displayStringAsText={joinCurrentArray}
+            />
           </div>
         )}
 
@@ -257,7 +278,6 @@ function detectImageSource(name: string, value: string, parentData?: any): strin
   if (compact.length < 24 || compact.length % 4 !== 0 || !bareBase64Pattern.test(compact)) {
     return null;
   }
-
   return `data:${mediaType};base64,${compact}`;
 }
 
@@ -310,7 +330,7 @@ function normalizeMultilineForDisplay(str: string): string {
     .join('\n');
 }
 
-function JsonValue({ name, data, parentData }: { name: string; data: any; parentData?: any }) {
+function JsonValue({ name, data, parentData, parseJsonValue = true, displayStringAsText = false }: { name: string; data: any; parentData?: any; parseJsonValue?: boolean; displayStringAsText?: boolean }) {
   const { globalStringExpanded } = React.useContext(JsonExpandContext);
   const [localExpanded, setLocalExpanded] = React.useState<boolean | null>(null);
   const [showRawString, setShowRawString] = React.useState(false);
@@ -332,8 +352,9 @@ function JsonValue({ name, data, parentData }: { name: string; data: any; parent
   switch (dataType) {
     case 'string': {
       const normalized = normalizeMultilineForDisplay(data);
-      const parsedJson = tryParseJson(data);
+      const parsedJson = parseJsonValue ? tryParseJson(data) : null;
       const imageSource = detectImageSource(name, data, parentData);
+      const displayText = displayStringAsText ? normalized : `"${normalized}"`;
 
       if (imageSource && !showRawString) {
         return (
@@ -403,7 +424,7 @@ function JsonValue({ name, data, parentData }: { name: string; data: any; parent
                 wordBreak: 'break-word',
                 tabSize: 2,
               }}
-            >{`"${normalized}"`}</pre>
+            >{displayText}</pre>
           ) : (
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
@@ -414,11 +435,11 @@ function JsonValue({ name, data, parentData }: { name: string; data: any; parent
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}
-                >{`"${normalized}"`}</span>
+                >{displayText}</span>
               </TooltipTrigger>
               <TooltipContent side='bottom' className='max-w-md p-2 text-xs break-words'>
                 <span className='whitespace-pre-wrap'>
-                  {`"${normalized.substring(0, 300)}${normalized.length > 300 ? '…' : ''}"`}
+                  {displayStringAsText ? normalized.substring(0, 300) : `"${normalized.substring(0, 300)}${normalized.length > 300 ? '…' : ''}"`}
                 </span>
               </TooltipContent>
             </Tooltip>

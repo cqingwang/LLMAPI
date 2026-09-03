@@ -1,4 +1,4 @@
-# AxonHub Docker Compose Configuration
+# LiteLLM Docker Compose Configuration
 #
 # CONFIGURATION OPTIONS:
 # 1. 环境变量 - 适用于敏感配置 (如数据库DSN、密码等)，优先级高于配置文件
@@ -33,7 +33,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # AxonHub 主服务
+  # LiteLLM 主服务
   axonhub:
     image: looplj/axonhub:latest
     container_name: axonhub-app
@@ -126,7 +126,7 @@ services:
   #     timeout: 5s
   #     retries: 5
   #
-  # # AxonHub 主服务 (MySQL 版本)
+  # # LiteLLM 主服务 (MySQL 版本)
   # # 注意: 取消注释此服务时，请注释掉上面的 PostgreSQL 版本 axonhub 服务
   # axonhub-mysql:
   #   image: looplj/axonhub:latest

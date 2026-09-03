@@ -3,7 +3,7 @@ package codex
 // DefaultModels returns a static list of Codex-capable model IDs.
 //
 // The ChatGPT Codex backend does not provide a stable public /models endpoint.
-// CLIProxyAPI keeps a local registry; we mirror that approach to power AxonHub "Fetch Models".
+// CLIProxyAPI keeps a local registry; we mirror that approach to power LiteLLM "Fetch Models".
 func DefaultModels() []string {
 	return []string{
 		"gpt-5",

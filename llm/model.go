@@ -25,7 +25,7 @@ var (
 	ErrStreamIncomplete = errors.New("stream ended without terminal event")
 )
 
-// Request is the unified llm request model for AxonHub, to keep compatibility with major app and framework.
+// Request is the unified llm request model for LiteLLM, to keep compatibility with major app and framework.
 // It choose to base on the OpenAI chat completion request, but add some extra fields to support more features.
 // All the fields except `Embedding`, `Rerank`, and other helper fields is for chat type request.
 //

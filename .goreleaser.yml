@@ -128,13 +128,13 @@ brews:
     test: |
       system "#{bin}/axonhub", "version"
     caveats: |
-      AxonHub runs with default configuration.
+      LiteLLM runs with default configuration.
       To customize, create a config file at: #{etc}/axonhub/config.yml
 
       View current configuration:
         axonhub config preview
 
-      The wrapper starts AxonHub from #{etc}/axonhub automatically.
+      The wrapper starts LiteLLM from #{etc}/axonhub automatically.
 
 checksum:
   name_template: 'checksums.txt'

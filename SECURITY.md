@@ -30,7 +30,7 @@ Include enough information for maintainers to reproduce and assess the issue:
 Reports are especially useful when they involve:
 
 - Authentication or authorization bypass.
-- Exposure or misuse of provider API keys, OAuth tokens, or AxonHub API keys.
+- Exposure or misuse of provider API keys, OAuth tokens, or LiteLLM API keys.
 - Server-side request forgery or unsafe outbound requests.
 - Cross-project or cross-user data access.
 - Leakage of request traces, prompts, responses, logs, or usage data.

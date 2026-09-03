@@ -17,6 +17,9 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channelprobe"
 	"github.com/looplj/axonhub/internal/ent/datastorage"
 	"github.com/looplj/axonhub/internal/ent/enttest"
+	"github.com/looplj/axonhub/internal/ent/request"
+	"github.com/looplj/axonhub/internal/ent/requestexecution"
+	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/objects"
 	"github.com/looplj/axonhub/internal/pkg/xcache"
 	"github.com/looplj/axonhub/internal/server/biz"
@@ -279,6 +282,44 @@ func TestWorker_cleanupWithZeroDays(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cleanupUsageLogs with negative days failed: %v", err)
 	}
+}
+
+func TestWorkerClearAllRequestRecords(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:ent?mode=memory&_fk=1")
+	t.Cleanup(func() { client.Close() })
+
+	ctx := authz.WithTestBypass(context.Background())
+	ctx = ent.NewContext(ctx, client)
+	project := client.Project.Create().SetName("clear-all-requests").SaveX(ctx)
+
+	for range 2 {
+		req := client.Request.Create().
+			SetProjectID(project.ID).
+			SetModelID("test-model").
+			SetStatus(request.StatusCompleted).
+			SetRequestBody(objects.JSONRawMessage(`{}`)).
+			SaveX(ctx)
+		client.RequestExecution.Create().
+			SetRequestID(req.ID).
+			SetProjectID(project.ID).
+			SetModelID("test-model").
+			SetRequestBody(objects.JSONRawMessage(`{}`)).
+			SetStatus(requestexecution.StatusCompleted).
+			SaveX(ctx)
+		client.UsageLog.Create().
+			SetRequestID(req.ID).
+			SetProjectID(project.ID).
+			SetModelID("test-model").
+			SetSource(usagelog.SourceAPI).
+			SetFormat("openai/chat_completions").
+			SaveX(ctx)
+	}
+
+	worker := &Worker{Ent: client, Config: Config{CRON: "0 0 * * *"}}
+	require.NoError(t, worker.ClearAllRequestRecords(ctx))
+	require.Zero(t, client.Request.Query().CountX(ctx))
+	require.Zero(t, client.RequestExecution.Query().CountX(ctx))
+	require.Zero(t, client.UsageLog.Query().CountX(ctx))
 }
 
 func TestWorker_cleanupChannelProbesDeletesInBatches(t *testing.T) {

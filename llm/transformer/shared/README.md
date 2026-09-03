@@ -6,7 +6,7 @@ provider-specific private protocols survive **same-session channel/model switchi
 
 ## Problem: same-session switching breaks provider private protocols
 
-In AxonHub a single user session can route consecutive turns through different
+In LiteLLM a single user session can route consecutive turns through different
 channels/providers/models (load-balancing, failover, or a user switching channels).
 
 Some providers emit extra "private protocol" fields that other providers don't
@@ -27,7 +27,7 @@ was produced by a different provider.
 
 ## Terminology: inbound vs outbound transformers
 
-In this repository, **inbound/outbound** are named from AxonHub's point of view:
+In this repository, **inbound/outbound** are named from LiteLLM's point of view:
 
 - **Outbound transformer**: converts unified structs to an upstream provider request, and converts the upstream provider response back into unified structs.
   - request direction: `llm.Request` -> provider request
@@ -73,7 +73,7 @@ Practical invariants:
 
 - **Strict filtering**: all three `Decode...` helpers (OpenAI, Anthropic, Gemini) only keep signatures positively identified as their own provider. `unknown` signatures are filtered to prevent `invalid_request_body` errors from downstream models.
 - **At provider edges**: a transformer decodes **only when required by that provider API**, and only when the heuristic matches that provider (otherwise drop on mismatch).
-- **Anthropic-specific exception**: decode is only required for Anthropic official platforms (`direct`, `claudecode`, `vertex`, `bedrock`). For other Anthropic-compatible outbound platforms, AxonHub forwards the value unchanged.
+- **Anthropic-specific exception**: decode is only required for Anthropic official platforms (`direct`, `claudecode`, `vertex`, `bedrock`). For other Anthropic-compatible outbound platforms, LiteLLM forwards the value unchanged.
 
 ### Mermaid: end-to-end encode/decode flow
 
@@ -81,7 +81,7 @@ Practical invariants:
 flowchart TD
     C[Client]
     IT[Inbound transformer<br/>external API ↔ llm]
-    LLM[AxonHub unified structs<br/>llm.Request / llm.Response]
+    LLM[LiteLLM unified structs<br/>llm.Request / llm.Response]
     OT[Outbound transformer<br/>llm ↔ provider API]
     P[Upstream provider API]
 
@@ -104,8 +104,8 @@ flowchart TD
 ## OpenAI Responses API note (why inbound must not decode)
 
 OpenAI Responses has a `reasoning` output item with `encrypted_content`.
-If AxonHub decodes/removes the value on inbound conversion, the client
-will send the next request without it, and AxonHub can no longer identify
+If LiteLLM decodes/removes the value on inbound conversion, the client
+will send the next request without it, and LiteLLM can no longer identify
 which provider protocol the signature belongs to.
 
 Therefore:
@@ -119,7 +119,7 @@ Therefore:
   through the signature as `encrypted_content` (do not decode).
 
 This keeps the session round-trip stable even if the client only "speaks" OpenAI
-Responses and AxonHub switches the actual upstream provider behind the scenes.
+Responses and LiteLLM switches the actual upstream provider behind the scenes.
 
 ## Evolution note
 

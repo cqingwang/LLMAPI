@@ -1,12 +1,12 @@
 # yaml-language-server: $schema=https://github.com/looplj/axonhub/releases/latest/download/config.schema.json
-# AxonHub Configuration Example
+# LiteLLM Configuration Example
 # Copy this file to config.yml and modify as needed
 
 # Server configuration
 server:
   host: "0.0.0.0"               # Server host (env: AXONHUB_SERVER_HOST)
   port: 8090                    # Server port (env: AXONHUB_SERVER_PORT)
-  name: "AxonHub"               # Server name (env: AXONHUB_SERVER_NAME)
+  name: "LiteLLM"               # Server name (env: AXONHUB_SERVER_NAME)
   base_path: ""                 # Base path for API routes (env: AXONHUB_SERVER_BASE_PATH)
   # pid_file: "~/.config/axonhub/axonhub.pid"  # PID file for axonhub reload (env: AXONHUB_SERVER_PID_FILE)
   request_timeout: "30s"        # Request timeout duration (env: AXONHUB_SERVER_REQUEST_TIMEOUT)

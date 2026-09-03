@@ -671,6 +671,98 @@ func (w *Worker) RunCleanupNow(ctx context.Context, input TriggerGcCleanupInput)
 	return nil
 }
 
+// ClearAllRequestRecords removes every request-related record immediately.
+// This intentionally does not apply retention rules or retained-trace checks.
+func (w *Worker) ClearAllRequestRecords(ctx context.Context) error {
+	ctx = ent.NewContext(ctx, w.Ent)
+	ctx = schematype.SkipSoftDelete(ctx)
+
+	if err := w.clearAllRequestExecutions(ctx); err != nil {
+		return fmt.Errorf("failed to clear request executions: %w", err)
+	}
+	if err := w.clearAllUsageLogs(ctx); err != nil {
+		return fmt.Errorf("failed to clear usage logs: %w", err)
+	}
+	if err := w.clearAllRequests(ctx); err != nil {
+		return fmt.Errorf("failed to clear requests: %w", err)
+	}
+
+	log.Info(ctx, "All request records cleared")
+	return nil
+}
+
+func (w *Worker) clearAllRequestExecutions(ctx context.Context) error {
+	cache := make(map[int]*ent.DataStorage)
+	for {
+		executions, err := w.Ent.RequestExecution.Query().
+			Select(requestexecution.FieldID, requestexecution.FieldProjectID, requestexecution.FieldRequestID, requestexecution.FieldDataStorageID).
+			Order(ent.Asc(requestexecution.FieldID)).
+			Limit(w.getBatchSize()).
+			All(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to query request executions: %w", err)
+		}
+		if len(executions) == 0 {
+			return nil
+		}
+
+		ids := make([]int, len(executions))
+		for i, execution := range executions {
+			ids[i] = execution.ID
+			w.cleanupExecutionExternalStorage(ctx, execution, cache)
+		}
+		if _, err := w.Ent.RequestExecution.Delete().Where(requestexecution.IDIn(ids...)).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to delete request executions: %w", err)
+		}
+	}
+}
+
+func (w *Worker) clearAllUsageLogs(ctx context.Context) error {
+	for {
+		logs, err := w.Ent.UsageLog.Query().Select(usagelog.FieldID).Order(ent.Asc(usagelog.FieldID)).Limit(w.getBatchSize()).All(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to query usage logs: %w", err)
+		}
+		if len(logs) == 0 {
+			return nil
+		}
+
+		ids := make([]int, len(logs))
+		for i, usageLog := range logs {
+			ids[i] = usageLog.ID
+		}
+		if _, err := w.Ent.UsageLog.Delete().Where(usagelog.IDIn(ids...)).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to delete usage logs: %w", err)
+		}
+	}
+}
+
+func (w *Worker) clearAllRequests(ctx context.Context) error {
+	cache := make(map[int]*ent.DataStorage)
+	for {
+		requests, err := w.Ent.Request.Query().
+			Select(request.FieldID, request.FieldProjectID, request.FieldDataStorageID).
+			Order(ent.Asc(request.FieldID)).
+			Limit(w.getBatchSize()).
+			All(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to query requests: %w", err)
+		}
+		if len(requests) == 0 {
+			return nil
+		}
+
+		ids := make([]int, len(requests))
+		for i, req := range requests {
+			ids[i] = req.ID
+			w.cleanupRequestExternalStorage(ctx, req, cache)
+		}
+		if _, err := w.Ent.Request.Delete().Where(request.IDIn(ids...)).Exec(ctx); err != nil {
+			return fmt.Errorf("failed to delete requests: %w", err)
+		}
+	}
+}
+
 // PreviewCleanup estimates how many records would be deleted without actually deleting them.
 func (w *Worker) PreviewCleanup(ctx context.Context, input TriggerGcCleanupInput) ([]GcCleanupPreviewItem, error) {
 	ctx = ent.NewContext(ctx, w.Ent)

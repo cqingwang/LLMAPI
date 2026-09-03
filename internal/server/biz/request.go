@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -763,6 +764,35 @@ func (s *RequestService) UpdateRequestExecutionCompleted(
 	}
 
 	return nil
+}
+
+// UpdateRequestExecutionResponseStatusCode 记录渠道 HTTP 状态码，不修改响应体。
+func (s *RequestService) UpdateRequestExecutionResponseStatusCode(ctx context.Context, executionID int, statusCode int) error {
+	if statusCode <= 0 {
+		return nil
+	}
+
+	_, err := s.entFromContext(ctx).RequestExecution.UpdateOneID(executionID).
+		SetResponseStatusCode(statusCode).
+		Save(ctx)
+	return err
+}
+
+// UpdateRequestExecutionResponseHeaders 记录渠道响应头，不修改响应体。
+func (s *RequestService) UpdateRequestExecutionResponseHeaders(ctx context.Context, executionID int, headers http.Header) error {
+	if len(headers) == 0 {
+		return nil
+	}
+
+	serializedHeaders, err := xjson.Marshal(headers)
+	if err != nil {
+		return fmt.Errorf("marshal response headers: %w", err)
+	}
+
+	_, err = s.entFromContext(ctx).RequestExecution.UpdateOneID(executionID).
+		SetResponseHeaders(serializedHeaders).
+		Save(ctx)
+	return err
 }
 
 // UpdateRequestExecutionCanceled updates request execution status to canceled with error message.

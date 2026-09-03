@@ -503,7 +503,7 @@ func TestConvertLLMToGeminiRequest_Gemini3ThinkingLevelvsBudget(t *testing.T) {
 //	candidatesTokenCount: 22
 //	totalTokenCount: 21097
 //
-// AxonHub was reporting 0% cache hit because it was incorrectly handling the token counts.
+// LiteLLM was reporting 0% cache hit because it was incorrectly handling the token counts.
 // The fix ensures:
 //
 //	prompt_tokens = promptTokenCount - cachedContentTokenCount = 631 (only NEW tokens)

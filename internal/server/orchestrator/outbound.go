@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/samber/lo"
@@ -298,6 +299,11 @@ func (ts *OutboundPersistentStream) persistAggregatedResponse(ctx context.Contex
 			log.Cause(err),
 		)
 	}
+	if ts.state != nil && ts.state.ResponseStatusCode > 0 {
+		if err := ts.RequestService.UpdateRequestExecutionResponseStatusCode(ctx, ts.requestExec.ID, ts.state.ResponseStatusCode); err != nil {
+			log.Warn(ctx, "Failed to persist request execution response status", log.Cause(err))
+		}
+	}
 
 	// Save all response chunks at once
 	if err := ts.RequestService.SaveRequestExecutionChunks(ctx, ts.requestExec.ID, ts.responseChunks); err != nil {
@@ -477,6 +483,10 @@ func (p *PersistentOutboundTransformer) TransformResponse(ctx context.Context, r
 }
 
 func (p *PersistentOutboundTransformer) TransformStream(ctx context.Context, req *httpclient.Request, stream streams.Stream[*httpclient.StreamEvent]) (streams.Stream[*llm.Response], error) {
+	// 流式请求建立成功即代表渠道已返回成功 HTTP 响应；若底层流接口未暴露状态码，使用标准成功码补齐日志。
+	if p.state.ResponseStatusCode == 0 {
+		p.state.ResponseStatusCode = http.StatusOK
+	}
 	persistentStream := NewOutboundPersistentStream(
 		ctx,
 		stream,

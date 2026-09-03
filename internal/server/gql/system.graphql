@@ -407,6 +407,7 @@ extend type Mutation {
   checkProviderQuotas: Boolean!
   resetChannelQuotaNow(channelID: ID!): Boolean!
   triggerGcCleanup(input: TriggerGcCleanupInput!): Boolean!
+  clearAllRequestRecords: Boolean!
   saveProxyPreset(input: SaveProxyPresetInput!): Boolean!
   deleteProxyPreset(url: String!): Boolean!
   updateUserAgentPassThroughSettings(input: UpdateUserAgentPassThroughSettingsInput!): Boolean!

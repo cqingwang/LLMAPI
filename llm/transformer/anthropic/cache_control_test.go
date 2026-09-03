@@ -624,7 +624,7 @@ func TestInboundTransformer_TopLevelCacheControl(t *testing.T) {
 
 // TestOutboundTransformer_TopLevelCacheControlPassthrough verifies that the
 // top-level `cache_control` marker is forwarded to the upstream Anthropic
-// request as-is and that AxonHub's per-block breakpoint optimization pipeline
+// request as-is and that LiteLLM's per-block breakpoint optimization pipeline
 // is intentionally skipped (Anthropic manages breakpoints automatically).
 func TestOutboundTransformer_TopLevelCacheControlPassthrough(t *testing.T) {
 	transformer, err := NewOutboundTransformer("https://api.anthropic.com", "test-key")

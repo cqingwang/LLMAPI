@@ -960,6 +960,16 @@ func RequestHeadersNotNil() predicate.RequestExecution {
 	return predicate.RequestExecution(sql.FieldNotNull(FieldRequestHeaders))
 }
 
+// ResponseHeadersIsNil applies the IsNil predicate on the "response_headers" field.
+func ResponseHeadersIsNil() predicate.RequestExecution {
+	return predicate.RequestExecution(sql.FieldIsNull(FieldResponseHeaders))
+}
+
+// ResponseHeadersNotNil applies the NotNil predicate on the "response_headers" field.
+func ResponseHeadersNotNil() predicate.RequestExecution {
+	return predicate.RequestExecution(sql.FieldNotNull(FieldResponseHeaders))
+}
+
 // RequestURLEQ applies the EQ predicate on the "request_url" field.
 func RequestURLEQ(v string) predicate.RequestExecution {
 	return predicate.RequestExecution(sql.FieldEQ(FieldRequestURL, v))

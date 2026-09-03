@@ -969,6 +969,7 @@ type ComplexityRoot struct {
 		BulkRecoverChannels                   func(childComplexity int, ids []*objects.GUID) int
 		BulkUpdateChannelOrdering             func(childComplexity int, input BulkUpdateChannelOrderingInput) int
 		CheckProviderQuotas                   func(childComplexity int) int
+		ClearAllRequestRecords                func(childComplexity int) int
 		ClearCache                            func(childComplexity int, input ClearCacheInput) int
 		ClearChannelOverrideTemplates         func(childComplexity int, input ClearChannelOverrideTemplatesInput) int
 		CompleteAutoDisableChannelOnboarding  func(childComplexity int, input CompleteAutoDisableChannelOnboardingInput) int
@@ -1509,6 +1510,7 @@ type ComplexityRoot struct {
 		RequestURL                 func(childComplexity int) int
 		ResponseBody               func(childComplexity int) int
 		ResponseChunks             func(childComplexity int) int
+		ResponseHeaders            func(childComplexity int) int
 		ResponseStatusCode         func(childComplexity int) int
 		Status                     func(childComplexity int) int
 		Stream                     func(childComplexity int) int
@@ -2268,6 +2270,7 @@ type MutationResolver interface {
 	CheckProviderQuotas(ctx context.Context) (bool, error)
 	ResetChannelQuotaNow(ctx context.Context, channelID objects.GUID) (bool, error)
 	TriggerGcCleanup(ctx context.Context, input gc.TriggerGcCleanupInput) (bool, error)
+	ClearAllRequestRecords(ctx context.Context) (bool, error)
 	SaveProxyPreset(ctx context.Context, input biz.ProxyPreset) (bool, error)
 	DeleteProxyPreset(ctx context.Context, url string) (bool, error)
 	UpdateUserAgentPassThroughSettings(ctx context.Context, input UpdateUserAgentPassThroughSettingsInput) (bool, error)
@@ -5946,6 +5949,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CheckProviderQuotas(childComplexity), true
+	case "Mutation.clearAllRequestRecords":
+		if e.complexity.Mutation.ClearAllRequestRecords == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ClearAllRequestRecords(childComplexity), true
 	case "Mutation.clearCache":
 		if e.complexity.Mutation.ClearCache == nil {
 			break
@@ -9137,6 +9146,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.RequestExecution.ResponseChunks(childComplexity), true
+	case "RequestExecution.responseHeaders":
+		if e.complexity.RequestExecution.ResponseHeaders == nil {
+			break
+		}
+
+		return e.complexity.RequestExecution.ResponseHeaders(childComplexity), true
 	case "RequestExecution.responseStatusCode":
 		if e.complexity.RequestExecution.ResponseStatusCode == nil {
 			break
@@ -36223,6 +36238,35 @@ func (ec *executionContext) fieldContext_Mutation_triggerGcCleanup(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_clearAllRequestRecords(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_clearAllRequestRecords,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Mutation().ClearAllRequestRecords(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_clearAllRequestRecords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_saveProxyPreset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -49195,6 +49239,35 @@ func (ec *executionContext) fieldContext_RequestExecution_requestHeaders(_ conte
 	return fc, nil
 }
 
+func (ec *executionContext) _RequestExecution_responseHeaders(ctx context.Context, field graphql.CollectedField, obj *ent.RequestExecution) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_RequestExecution_responseHeaders,
+		func(ctx context.Context) (any, error) {
+			return obj.ResponseHeaders, nil
+		},
+		nil,
+		ec.marshalOJSONRawMessage2githubᚗcomᚋloopljᚋaxonhubᚋinternalᚋobjectsᚐJSONRawMessage,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_RequestExecution_responseHeaders(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "RequestExecution",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type JSONRawMessage does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _RequestExecution_requestURL(ctx context.Context, field graphql.CollectedField, obj *ent.RequestExecution) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -49669,6 +49742,8 @@ func (ec *executionContext) fieldContext_RequestExecutionEdge_node(_ context.Con
 				return ec.fieldContext_RequestExecution_metricsReasoningDurationMs(ctx, field)
 			case "requestHeaders":
 				return ec.fieldContext_RequestExecution_requestHeaders(ctx, field)
+			case "responseHeaders":
+				return ec.fieldContext_RequestExecution_responseHeaders(ctx, field)
 			case "requestURL":
 				return ec.fieldContext_RequestExecution_requestURL(ctx, field)
 			case "passThroughApplied":
@@ -97328,6 +97403,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "clearAllRequestRecords":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_clearAllRequestRecords(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "saveProxyPreset":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_saveProxyPreset(ctx, field)
@@ -103160,6 +103242,8 @@ func (ec *executionContext) _RequestExecution(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._RequestExecution_metricsReasoningDurationMs(ctx, field, obj)
 		case "requestHeaders":
 			out.Values[i] = ec._RequestExecution_requestHeaders(ctx, field, obj)
+		case "responseHeaders":
+			out.Values[i] = ec._RequestExecution_responseHeaders(ctx, field, obj)
 		case "requestURL":
 			out.Values[i] = ec._RequestExecution_requestURL(ctx, field, obj)
 		case "passThroughApplied":

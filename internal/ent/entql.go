@@ -455,6 +455,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			requestexecution.FieldMetricsFirstTokenLatencyMs: {Type: field.TypeInt64, Column: requestexecution.FieldMetricsFirstTokenLatencyMs},
 			requestexecution.FieldMetricsReasoningDurationMs: {Type: field.TypeInt64, Column: requestexecution.FieldMetricsReasoningDurationMs},
 			requestexecution.FieldRequestHeaders:             {Type: field.TypeJSON, Column: requestexecution.FieldRequestHeaders},
+			requestexecution.FieldResponseHeaders:            {Type: field.TypeJSON, Column: requestexecution.FieldResponseHeaders},
 			requestexecution.FieldRequestURL:                 {Type: field.TypeString, Column: requestexecution.FieldRequestURL},
 			requestexecution.FieldPassThroughApplied:         {Type: field.TypeBool, Column: requestexecution.FieldPassThroughApplied},
 		},
@@ -3618,6 +3619,11 @@ func (f *RequestExecutionFilter) WhereMetricsReasoningDurationMs(p entql.Int64P)
 // WhereRequestHeaders applies the entql json.RawMessage predicate on the request_headers field.
 func (f *RequestExecutionFilter) WhereRequestHeaders(p entql.BytesP) {
 	f.Where(p.Field(requestexecution.FieldRequestHeaders))
+}
+
+// WhereResponseHeaders applies the entql json.RawMessage predicate on the response_headers field.
+func (f *RequestExecutionFilter) WhereResponseHeaders(p entql.BytesP) {
+	f.Where(p.Field(requestexecution.FieldResponseHeaders))
 }
 
 // WhereRequestURL applies the entql string predicate on the request_url field.

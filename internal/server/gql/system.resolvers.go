@@ -292,6 +292,20 @@ func (r *mutationResolver) TriggerGcCleanup(ctx context.Context, input gc.Trigge
 	return true, nil
 }
 
+// ClearAllRequestRecords is the resolver for the clearAllRequestRecords field.
+func (r *mutationResolver) ClearAllRequestRecords(ctx context.Context) (bool, error) {
+	if !scopes.UserHasScope(ctx, scopes.ScopeWriteSettings) {
+		return false, fmt.Errorf("permission denied: requires write:settings scope")
+	}
+
+	clearCtx := authz.WithSystemBypass(context.WithoutCancel(ctx), "clear-all-request-records")
+	if err := r.gcWorker.ClearAllRequestRecords(clearCtx); err != nil {
+		return false, fmt.Errorf("failed to clear all request records: %w", err)
+	}
+
+	return true, nil
+}
+
 // SaveProxyPreset is the resolver for the saveProxyPreset field.
 func (r *mutationResolver) SaveProxyPreset(ctx context.Context, input biz.ProxyPreset) (bool, error) {
 	err := r.systemService.SaveProxyPreset(ctx, input)

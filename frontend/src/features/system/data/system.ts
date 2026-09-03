@@ -211,6 +211,12 @@ const TRIGGER_GC_CLEANUP_MUTATION = `
   }
 `;
 
+const CLEAR_ALL_REQUEST_RECORDS_MUTATION = `
+  mutation ClearAllRequestRecords {
+    clearAllRequestRecords
+  }
+`;
+
 const PREVIEW_GC_CLEANUP_QUERY = `
   query previewGcCleanup($input: TriggerGcCleanupInput!) {
     previewGcCleanup(input: $input) {
@@ -538,6 +544,26 @@ export function useTriggerGcCleanup() {
     },
     onError: () => {
       toast.error(i18n.t('system.storage.policy.runCleanupError'));
+    },
+  });
+}
+
+export function useClearAllRequestRecords() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const data = await graphqlRequest<{ clearAllRequestRecords: boolean }>(CLEAR_ALL_REQUEST_RECORDS_MUTATION);
+      return data.clearAllRequestRecords;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      queryClient.invalidateQueries({ queryKey: ['request-executions'] });
+      queryClient.invalidateQueries({ queryKey: ['usageLogs'] });
+      toast.success(i18n.t('system.storage.policy.clearAllRequestRecordsSuccess'));
+    },
+    onError: () => {
+      toast.error(i18n.t('system.storage.policy.clearAllRequestRecordsError'));
     },
   });
 }

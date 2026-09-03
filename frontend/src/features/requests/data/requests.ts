@@ -152,6 +152,21 @@ function buildRequestDetailQuery(permissions: { canViewApiKeys: boolean; canView
           status
           format
           metricsReasoningDurationMs
+          executions(first: 1, orderBy: { field: CREATED_AT, direction: DESC }) {
+            edges {
+              node {
+                responseStatusCode
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+            totalCount
+          }
           usageLogs(first: 1) {
             edges {
               node {
@@ -207,6 +222,21 @@ function buildRequestDetailPollingQuery(permissions: { canViewApiKeys: boolean; 
           status
           format
           metricsReasoningDurationMs
+          executions(first: 1, orderBy: { field: CREATED_AT, direction: DESC }) {
+            edges {
+              node {
+                responseStatusCode
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+            totalCount
+          }
         }
       }
     }
@@ -245,6 +275,7 @@ function buildRequestExecutionsQuery(permissions: { canViewChannels: boolean }) 
                 projectID
                 dataStorageID
                 requestHeaders
+                responseHeaders
                 requestBody
                 responseBody
                 responseChunks

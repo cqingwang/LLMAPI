@@ -4091,6 +4091,11 @@ func (_q *RequestExecutionQuery) collectField(ctx context.Context, oneNode bool,
 				selectedFields = append(selectedFields, requestexecution.FieldRequestHeaders)
 				fieldSeen[requestexecution.FieldRequestHeaders] = struct{}{}
 			}
+		case "responseHeaders":
+			if _, ok := fieldSeen[requestexecution.FieldResponseHeaders]; !ok {
+				selectedFields = append(selectedFields, requestexecution.FieldResponseHeaders)
+				fieldSeen[requestexecution.FieldResponseHeaders] = struct{}{}
+			}
 		case "requestURL":
 			if _, ok := fieldSeen[requestexecution.FieldRequestURL]; !ok {
 				selectedFields = append(selectedFields, requestexecution.FieldRequestURL)

@@ -1,6 +1,6 @@
 <div align="center">
 
-# AxonHub - オールインワンAI開発プラットフォーム
+# LiteLLM - オールインワンAI開発プラットフォーム
 ### あらゆるSDKを使用。あらゆるモデルにアクセス。コード変更ゼロ。
 
 <a href="https://trendshift.io/repositories/16225" target="_blank"><img src="https://trendshift.io/api/badge/repositories/16225" alt="looplj%2Faxonhub | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -53,7 +53,7 @@
         本プロジェクトを支援いただいている Krill AI に感謝します。Krill は GPT、Claude、Gemini および多数の中国国内モデル向けに、公式かつ安定した高速 API 中継サービスを提供しています。エンタープライズ向けカスタマイズ、請求書発行、1日16時間・週7日の専用技術サポートに対応しています。独自に最適化された WebSocket 接続により、最初のトークンをより速く受け取れます。
       </p>
       <p align="left">
-        <a href="https://lj.s.gy/jKk8uU" target="_blank">このリンク</a> から登録し、チャージ時に <code>AxonHub</code> クーポンコードを入力すると、初回の Codex プラン購入が 23% オフになります。
+        <a href="https://lj.s.gy/jKk8uU" target="_blank">このリンク</a> から登録し、チャージ時に <code>LiteLLM</code> クーポンコードを入力すると、初回の Codex プラン購入が 23% オフになります。
       </p>
     </td>
   </tr>
@@ -80,7 +80,7 @@
         </a>
       </td>
       <td valign="middle">
-        七牛云 AI は七牛云（02567.HK）傘下の企業向け大規模モデル MaaS プラットフォームです。世界中の 150 以上の主要モデルをワンストップで利用でき、主要なモデルプロバイダーのプロトコルに対応しています。テキスト、画像、音声、動画、ファイル処理など、あらゆるモダリティに対応し、169 万を超える企業・開発者にサービスを提供しています。AxonHub ユーザー限定特典として、<a href="https://lj.s.gy/8HNo22" target="_blank">こちらのリンクから登録</a>すると、企業ユーザーは 1,200 万トークン、開発者は 300 万トークンを無料で受け取れます。
+        七牛云 AI は七牛云（02567.HK）傘下の企業向け大規模モデル MaaS プラットフォームです。世界中の 150 以上の主要モデルをワンストップで利用でき、主要なモデルプロバイダーのプロトコルに対応しています。テキスト、画像、音声、動画、ファイル処理など、あらゆるモダリティに対応し、169 万を超える企業・開発者にサービスを提供しています。LiteLLM ユーザー限定特典として、<a href="https://lj.s.gy/8HNo22" target="_blank">こちらのリンクから登録</a>すると、企業ユーザーは 1,200 万トークン、開発者は 300 万トークンを無料で受け取れます。
       </td>
     </tr>
     <tr>
@@ -92,7 +92,7 @@
         </a>
       </td>
       <td valign="middle">
-        FennoAI は、企業の研究開発チームと開発者向けに、高い安定性と性能を提供する API 中継サービスです。OpenAI および Anthropic プロトコルに対応し、Codex、Claude Code、OpenCode など主要な AI コーディングツールにシームレスに接続できます。1 日あたり数千億トークン規模の利用を支える企業向けの安定性を備え、国内外の事業主体間の決済や請求書発行にも対応しています。AxonHub ユーザー限定特典として、<a href="https://lj.s.gy/Wo8IuN" target="_blank">専用リンクからサブスクリプションを購入</a>すると、わずか 1.99 ドルで 50 ドル相当の Coding Plan クレジットを利用できます。紹介報酬にも対応しており、友人の購入で最大 20% のコミッションを獲得できます。
+        FennoAI は、企業の研究開発チームと開発者向けに、高い安定性と性能を提供する API 中継サービスです。OpenAI および Anthropic プロトコルに対応し、Codex、Claude Code、OpenCode など主要な AI コーディングツールにシームレスに接続できます。1 日あたり数千億トークン規模の利用を支える企業向けの安定性を備え、国内外の事業主体間の決済や請求書発行にも対応しています。LiteLLM ユーザー限定特典として、<a href="https://lj.s.gy/Wo8IuN" target="_blank">専用リンクからサブスクリプションを購入</a>すると、わずか 1.99 ドルで 50 ドル相当の Coding Plan クレジットを利用できます。紹介報酬にも対応しており、友人の購入で最大 20% のコミッションを獲得できます。
       </td>
     </tr>
     <tr>
@@ -104,7 +104,7 @@
         </a>
       </td>
       <td valign="middle">
-        AxonHub をローカルセットアップなしで試すなら、Bloome で：
+        LiteLLM をローカルセットアップなしで試すなら、Bloome で：
         <a href="https://bloome.im/app?ref=MjgMzmCY&utm_medium=github&utm_source=looplj-axonhub-ivor-202606" target="_blank">Quick start</a>、
         ブラウザやスマートフォンからワンクリックで起動でき、チームにも簡単に共有できます。
       </td>
@@ -139,7 +139,7 @@ OpenAI SDK、Anthropic SDK、またはその他のAI SDKを使用している場
 - 💸 **コスト管理** - リアルタイムの使用量追跡と予算管理
 
 <div align="center">
-  <img src="docs/axonhub-architecture-light.svg" alt="AxonHub Architecture" width="700"/>
+  <img src="docs/axonhub-architecture-light.svg" alt="LiteLLM Architecture" width="700"/>
 </div>
 
 ### コア機能
@@ -385,7 +385,7 @@ AxonHubは、環境変数によるオーバーライドをサポートするYAML
 # config.yml
 server:
   port: 8090
-  name: "AxonHub"
+  name: "LiteLLM"
   debug: false
 
 db:
@@ -584,7 +584,7 @@ SDKの詳細な使用例とコードサンプルについては、APIドキュ�
 
 <div align="center">
 
-**AxonHub** - オールインワンAI開発プラットフォーム、AI開発をよりシンプルに
+**LiteLLM** - オールインワンAI開発プラットフォーム、AI開発をよりシンプルに
 
 [🏠 ホームページ](https://github.com/looplj/axonhub) • [📚 ドキュメント](https://deepwiki.com/looplj/axonhub) • [🐛 問題報告](https://github.com/looplj/axonhub/issues)
 

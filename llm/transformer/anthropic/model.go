@@ -97,7 +97,7 @@ type MessageRequest struct {
 	// the top level of the request, Anthropic automatically applies the cache
 	// breakpoint to the last cacheable block and moves it forward as the
 	// conversation grows. See https://docs.claude.com/en/docs/build-with-claude/prompt-caching.
-	// When this field is set, AxonHub preserves it as-is and skips its own
+	// When this field is set, LiteLLM preserves it as-is and skips its own
 	// per-block cache_control breakpoint optimization pipeline.
 	CacheControl *CacheControl `json:"cache_control,omitempty"`
 }

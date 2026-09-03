@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { getTokenFromStorage } from '@/stores/authStore';
 import { useSelectedProjectId } from '@/stores/projectStore';
 import { extractNumberID } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -14,6 +15,7 @@ import { Header } from '@/components/layout/header';
 import { Main } from '@/components/layout/main';
 import { useStoragePolicy } from '@/features/system/data/system';
 import { type Request, useRequest } from '../data';
+import { getStatusColor } from './help';
 import { RequestDetailContent } from './request-detail-content';
 
 type PreviewFallbackResponse = {
@@ -25,6 +27,13 @@ type PreviewEvent = {
   event: string;
   data: string;
 };
+
+function getResponseStatusColor(statusCode: number): string {
+  if (statusCode >= 200 && statusCode < 300) return 'border-green-500/40 bg-green-500/10 text-green-700 dark:text-green-400';
+  if (statusCode >= 400 && statusCode < 500) return 'border-yellow-500/40 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400';
+  if (statusCode >= 500 && statusCode < 600) return 'border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-400';
+  return 'border-border bg-muted/40 text-muted-foreground';
+}
 
 function parsePreviewEvent(rawEvent: string): PreviewEvent | null {
   const normalizedEvent = rawEvent.replace(/\r\n/g, '\n').trim();
@@ -139,6 +148,7 @@ export default function RequestDetailPage() {
   });
 
   const request = previewRequest ?? requestData;
+  const responseStatusCode = request?.executions?.edges?.[0]?.node?.responseStatusCode;
 
   useEffect(() => {
     if (!requestData) {
@@ -361,23 +371,40 @@ export default function RequestDetailPage() {
   return (
     <div className='flex h-full flex-col'>
       <Header className='bg-background/95 supports-[backdrop-filter]:bg-background/60 border-b backdrop-blur'>
-        <div className='flex items-center space-x-4'>
+        <div className='flex min-w-0 items-center gap-3'>
           <Button variant='ghost' size='sm' onClick={handleBack} className='hover:bg-accent'>
             <ArrowLeft className='mr-2 h-4 w-4' />
             {t('common.back')}
           </Button>
           <Separator orientation='vertical' className='h-6' />
-          <div className='flex items-center space-x-3'>
-            <div className='bg-primary/10 flex h-8 w-8 items-center justify-center rounded-lg'>
+          <div className='flex min-w-0 items-center gap-2'>
+            <div className='bg-primary/10 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg'>
               <FileText className='text-primary h-4 w-4' />
             </div>
-            <div>
-              <div className='flex items-center gap-1'>
-                <h1 className='text-lg leading-none font-semibold'>
-                  {t('requests.detail.title')} #
-                  {request ? extractNumberID(request.id) || request.id : extractNumberID(requestId) || requestId}
-                </h1>
-                <Tooltip>
+            <div className='flex min-w-0 items-center gap-2'>
+              <h1 className='shrink-0 text-base leading-none font-semibold'>
+                {t('requests.detail.title')} #
+                {request ? extractNumberID(request.id) || request.id : extractNumberID(requestId) || requestId}
+              </h1>
+              {request && (
+                <>
+                  <Badge className={getStatusColor(request.status)} variant='secondary'>
+                    {t(`requests.status.${request.status}`)}
+                  </Badge>
+                  {responseStatusCode != null && (
+                    <Badge variant='outline' className={`shrink-0 font-mono ${getResponseStatusColor(responseStatusCode)}`}>
+                      {responseStatusCode}
+                    </Badge>
+                  )}
+                  <span className='text-muted-foreground hidden shrink-0 text-xs sm:inline'>·</span>
+                  <span className='text-muted-foreground min-w-0 truncate text-sm'>{request.channel?.name || t('requests.columns.unknown')}</span>
+                  <span className='text-muted-foreground hidden shrink-0 text-xs sm:inline'>/</span>
+                  <span className='text-muted-foreground min-w-0 truncate text-sm'>{request.modelID || t('requests.columns.unknown')}</span>
+                  <span className='text-muted-foreground hidden shrink-0 text-xs md:inline'>·</span>
+                  <span className='text-muted-foreground hidden shrink-0 font-mono text-xs md:inline'>{format(new Date(request.createdAt), 'MM-dd HH.mm.ss')}</span>
+                </>
+              )}
+              <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant='ghost' size='icon-sm' className='h-7 w-7' onClick={() => void copyRequestID()} aria-label={t('requests.actions.copyRequestId')}>
                       <Copy className='h-3.5 w-3.5' />
@@ -385,21 +412,13 @@ export default function RequestDetailPage() {
                   </TooltipTrigger>
                   <TooltipContent>{t('requests.actions.copyRequestId')}</TooltipContent>
                 </Tooltip>
-              </div>
-              {request && (
-                <div className='mt-1 flex items-center gap-2'>
-                  <p className='text-muted-foreground text-sm'>{request.modelID || t('requests.columns.unknown')}</p>
-                  <span className='text-muted-foreground text-xs'>•</span>
-                  <p className='text-muted-foreground text-xs'>{format(new Date(request.createdAt), 'yyyy-MM-dd HH:mm:ss')}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </Header>
 
       <Main className='flex-1 overflow-auto'>
-        <div className='container mx-auto max-w-7xl p-6'>
+        <div className='container mx-auto max-w-[1600px] p-4 lg:p-5'>
           <RequestDetailContent
             requestId={requestId}
             projectId={selectedProjectId}

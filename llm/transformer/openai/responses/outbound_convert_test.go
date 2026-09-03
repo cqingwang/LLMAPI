@@ -322,7 +322,7 @@ func TestConvertToolMessage(t *testing.T) {
 			},
 		},
 		{
-			// Known gap, unchanged by this fix: part kinds the current AxonHub
+			// Known gap, unchanged by this fix: part kinds the current LiteLLM
 			// Responses Item model cannot express in a tool result are still dropped
 			// silently, and an all-dropped result is still indistinguishable from a
 			// genuinely empty one. Surfacing that needs structured logging (no logger

@@ -518,7 +518,7 @@ func (_m *Request) Executions(
 		conn.build(nodes, pager, after, first, before, last)
 		return conn, nil
 	}
-	return SelectRequestExecutionQueryFields(_m.QueryExecutions(), ctx).Paginate(ctx, after, first, before, last, opts...)
+	return _m.QueryExecutions().Paginate(ctx, after, first, before, last, opts...)
 }
 
 func (_m *Request) Channel(ctx context.Context) (*Channel, error) {

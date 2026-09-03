@@ -2,7 +2,9 @@ package orchestrator
 
 import (
 	"context"
+	"net/http"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -22,6 +24,18 @@ var (
 	apiKeyRegex = regexp.MustCompile(`(api[keyK]ey|API[keyK]ey)["']?\s*[:=]\s*["']?([a-zA-Z0-9_\-\.]{8,})["']?`)
 	emailRegex  = regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
 )
+
+func sanitizeResponseHeaders(headers http.Header) http.Header {
+	sanitized := make(http.Header, len(headers))
+	for key, values := range headers {
+		if strings.EqualFold(key, "Authorization") || strings.EqualFold(key, "Proxy-Authorization") || strings.EqualFold(key, "Set-Cookie") || strings.Contains(strings.ToLower(key), "api-key") {
+			sanitized[key] = []string{"[REDACTED]"}
+			continue
+		}
+		sanitized[key] = append([]string(nil), values...)
+	}
+	return sanitized
+}
 
 // sanitizeResponseBody redacts obvious secrets and truncates the body for safe logging.
 func sanitizeResponseBody(body []byte, maxLen int) []byte {
@@ -69,7 +83,7 @@ func (m *persistRequestExecutionMiddleware) Name() string {
 
 func (m *persistRequestExecutionMiddleware) OnOutboundRawRequest(ctx context.Context, request *httpclient.Request) (*httpclient.Request, error) {
 	state := m.outbound.state
-	if state == nil || state.RequestExec != nil {
+	if state == nil || state.Request == nil || state.RequestExec != nil {
 		return request, nil
 	}
 
@@ -99,14 +113,17 @@ func (m *persistRequestExecutionMiddleware) OnOutboundRawRequest(ctx context.Con
 		state.PassThroughApplied,
 	)
 	if err != nil {
-		return nil, err
+		// 执行日志属于旁路副作用；数据库或存储异常不能改变发往渠道的原始请求。
+		log.Warn(ctx, "Failed to create request execution log, continuing without persistence", log.Cause(err))
+		return request, nil
 	}
 
 	// Update request with channel ID after channel selection
 	if state.Request != nil && state.Request.ChannelID != channel.ID {
 		err := state.RequestService.UpdateRequestChannelID(ctx, state.Request.ID, channel.ID)
 		if err != nil {
-			return nil, err
+			// 渠道回写仅用于日志展示，不应让已经构造好的上游请求失败。
+			log.Warn(ctx, "Failed to update request log channel, continuing request", log.Cause(err))
 		}
 		// Update the in-memory state to prevent duplicate updates and ensure consistency
 		state.Request.ChannelID = channel.ID
@@ -119,6 +136,9 @@ func (m *persistRequestExecutionMiddleware) OnOutboundRawRequest(ctx context.Con
 
 func (m *persistRequestExecutionMiddleware) OnOutboundRawResponse(ctx context.Context, response *httpclient.Response) (*httpclient.Response, error) {
 	m.rawResponse = response
+	if m.outbound.state != nil && response != nil {
+		m.outbound.state.ResponseStatusCode = response.StatusCode
+	}
 	return response, nil
 }
 
@@ -182,6 +202,16 @@ func (m *persistRequestExecutionMiddleware) OnOutboundLlmResponse(ctx context.Co
 	if err != nil {
 		log.Warn(persistCtx, "Failed to update request execution status to completed", log.Cause(err))
 	}
+	if m.outbound.state.ResponseStatusCode > 0 {
+		if err := state.RequestService.UpdateRequestExecutionResponseStatusCode(persistCtx, state.RequestExec.ID, m.outbound.state.ResponseStatusCode); err != nil {
+			log.Warn(persistCtx, "Failed to persist request execution response status", log.Cause(err))
+		}
+	}
+	if m.rawResponse != nil && len(m.rawResponse.Headers) > 0 {
+		if err := state.RequestService.UpdateRequestExecutionResponseHeaders(persistCtx, state.RequestExec.ID, sanitizeResponseHeaders(m.rawResponse.Headers)); err != nil {
+			log.Warn(persistCtx, "Failed to persist request execution response headers", log.Cause(err))
+		}
+	}
 
 	return llmResp, nil
 }
@@ -216,6 +246,11 @@ func (m *persistRequestExecutionMiddleware) OnOutboundRawError(ctx context.Conte
 	// Use context without cancellation to ensure persistence even if client canceled
 	persistCtx, cancel := xcontext.DetachWithTimeout(ctx, 10*time.Second)
 	defer cancel()
+	if httpErr, ok := xerrors.As[*httpclient.Error](err); ok && len(httpErr.Headers) > 0 {
+		if headerErr := state.RequestService.UpdateRequestExecutionResponseHeaders(persistCtx, state.RequestExec.ID, sanitizeResponseHeaders(httpErr.Headers)); headerErr != nil {
+			log.Warn(persistCtx, "Failed to persist failed response headers", log.Cause(headerErr))
+		}
+	}
 
 	updateErr := state.RequestService.UpdateRequestExecutionFailed(
 		persistCtx,
