@@ -214,7 +214,8 @@ type BackupOptions struct {
 	IncludeAPIKeys       bool
 	IncludeModelPrices   bool
 	IncludeUsageStats    bool
-	IncludeRequestLogs   bool
+	// 兼容旧调用方；新备份不再写入请求详情记录。
+	IncludeRequestLogs bool
 }
 
 type ConflictStrategy string

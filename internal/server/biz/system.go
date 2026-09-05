@@ -247,8 +247,9 @@ type AutoBackupSettings struct {
 	IncludeAPIKeys       bool `json:"include_api_keys"`
 	IncludeModelPrices   bool `json:"include_model_prices"`
 	IncludeUsageStats    bool `json:"include_usage_stats"`
-	IncludeRequestLogs   bool `json:"include_request_logs"`
-	// RetentionDays defines how many days to keep backups (0 = keep all)
+	// 兼容旧配置；新备份始终不包含请求详情记录。
+	IncludeRequestLogs bool `json:"include_request_logs"`
+	// RetentionDays 兼容旧配置；新备份固定覆盖为单份文件，不再按天保留多份。
 	RetentionDays int `json:"retention_days"`
 	// LastBackupAt is the timestamp of the last successful backup
 	LastBackupAt *time.Time `json:"last_backup_at,omitempty"`

@@ -708,6 +708,15 @@ func TestPlaygroundHandleError_InvalidModel_Returns400(t *testing.T) {
 	assert.Contains(t, errResp.Error.Message, "request model is empty")
 }
 
+func TestIsPlaygroundRequestCanceled(t *testing.T) {
+	canceledCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	assert.True(t, isPlaygroundRequestCanceled(canceledCtx, fmt.Errorf("upstream: %w", context.Canceled)))
+	assert.True(t, isPlaygroundRequestCanceled(context.Background(), context.Canceled))
+	assert.False(t, isPlaygroundRequestCanceled(context.Background(), errors.New("unrelated error")))
+}
+
 func TestPlaygroundHandleError_OtherError_Returns500(t *testing.T) {
 	handlers := &PlaygroundHandlers{}
 

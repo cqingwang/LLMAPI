@@ -284,6 +284,142 @@ func TestWorker_cleanupWithZeroDays(t *testing.T) {
 	}
 }
 
+func TestWorker_cleanupSQLiteRequestDetailsWhenDatabaseReachesThreshold(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:sqlite-details?mode=memory&_fk=1")
+	t.Cleanup(func() { client.Close() })
+
+	ctx := authz.WithTestBypass(context.Background())
+	ctx = ent.NewContext(ctx, client)
+	project := client.Project.Create().SetName("sqlite-details").SaveX(ctx)
+	baseTime := time.Now().Add(-32 * time.Minute)
+
+	for i := 0; i < 32; i++ {
+		req := client.Request.Create().
+			SetProjectID(project.ID).
+			SetModelID("model").
+			SetStatus(request.StatusCompleted).
+			SetCreatedAt(baseTime.Add(time.Duration(i) * time.Minute)).
+			SetRequestHeaders(objects.JSONRawMessage(`{"authorization":"secret"}`)).
+			SetRequestBody(objects.JSONRawMessage(`{"request":"detail"}`)).
+			SetResponseBody(objects.JSONRawMessage(`{"response":"detail"}`)).
+			SetResponseChunks([]objects.JSONRawMessage{objects.JSONRawMessage(`{"chunk":"detail"}`)}).
+			SaveX(ctx)
+		client.RequestExecution.Create().
+			SetRequestID(req.ID).
+			SetProjectID(project.ID).
+			SetModelID("model").
+			SetStatus(requestexecution.StatusCompleted).
+			SetCreatedAt(baseTime.Add(time.Duration(i) * time.Minute)).
+			SetRequestBody(objects.JSONRawMessage(`{"request":"upstream-detail"}`)).
+			SetResponseBody(objects.JSONRawMessage(`{"response":"upstream-detail"}`)).
+			SetResponseChunks([]objects.JSONRawMessage{objects.JSONRawMessage(`{"chunk":"upstream-detail"}`)}).
+			SetRequestHeaders(objects.JSONRawMessage(`{"authorization":"secret"}`)).
+			SetResponseHeaders(objects.JSONRawMessage(`{"x-request-id":"secret"}`)).
+			SaveX(ctx)
+	}
+
+	worker := &Worker{
+		Ent:    client,
+		Config: Config{CRON: "0 0 * * *"},
+		sqliteDatabaseSize: func(context.Context) (int64, error) {
+			return sqliteRequestDetailsSizeThreshold, nil
+		},
+	}
+
+	require.NoError(t, worker.cleanupSQLiteRequestDetailsIfNeeded(ctx))
+
+	requests := client.Request.Query().Order(ent.Desc(request.FieldCreatedAt)).AllX(ctx)
+	require.Len(t, requests, 32)
+	for i, req := range requests {
+		if i < sqliteRequestDetailsKeepCount {
+			require.JSONEq(t, `{"request":"detail"}`, string(req.RequestBody))
+			require.NotEmpty(t, req.ResponseBody)
+			require.NotEmpty(t, req.ResponseChunks)
+			require.NotEmpty(t, req.RequestHeaders)
+			continue
+		}
+		require.JSONEq(t, `{}`, string(req.RequestBody))
+		require.Empty(t, req.ResponseBody)
+		require.Empty(t, req.ResponseChunks)
+		require.Empty(t, req.RequestHeaders)
+	}
+
+	executions := client.RequestExecution.Query().AllX(ctx)
+	require.Len(t, executions, 32)
+	for _, execution := range executions {
+		req := client.Request.GetX(ctx, execution.RequestID)
+		if req.CreatedAt.After(baseTime.Add(1 * time.Minute)) {
+			require.JSONEq(t, `{"request":"upstream-detail"}`, string(execution.RequestBody))
+			require.NotEmpty(t, execution.ResponseBody)
+			require.NotEmpty(t, execution.ResponseChunks)
+			require.NotEmpty(t, execution.RequestHeaders)
+			require.NotEmpty(t, execution.ResponseHeaders)
+			continue
+		}
+		require.JSONEq(t, `{}`, string(execution.RequestBody))
+		require.Empty(t, execution.ResponseBody)
+		require.Empty(t, execution.ResponseChunks)
+		require.Empty(t, execution.RequestHeaders)
+		require.Empty(t, execution.ResponseHeaders)
+	}
+}
+
+func TestWorker_cleanupSQLiteRequestDetailsSkipsBelowThreshold(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:sqlite-details-below?mode=memory&_fk=1")
+	t.Cleanup(func() { client.Close() })
+
+	ctx := authz.WithTestBypass(context.Background())
+	ctx = ent.NewContext(ctx, client)
+	project := client.Project.Create().SetName("sqlite-details-below").SaveX(ctx)
+	for range sqliteRequestDetailsKeepCount + 1 {
+		client.Request.Create().
+			SetProjectID(project.ID).
+			SetModelID("model").
+			SetStatus(request.StatusCompleted).
+			SetRequestBody(objects.JSONRawMessage(`{"request":"detail"}`)).
+			SetResponseBody(objects.JSONRawMessage(`{"response":"detail"}`)).
+			SaveX(ctx)
+	}
+
+	worker := &Worker{
+		Ent:    client,
+		Config: Config{CRON: "0 0 * * *"},
+		sqliteDatabaseSize: func(context.Context) (int64, error) {
+			return sqliteRequestDetailsSizeThreshold - 1, nil
+		},
+	}
+
+	require.NoError(t, worker.cleanupSQLiteRequestDetailsIfNeeded(ctx))
+	for _, req := range client.Request.Query().AllX(ctx) {
+		require.JSONEq(t, `{"request":"detail"}`, string(req.RequestBody))
+		require.NotEmpty(t, req.ResponseBody)
+	}
+}
+
+func TestWorker_cleanupSQLiteRequestDetailsUsesCheckInterval(t *testing.T) {
+	client := enttest.NewEntClient(t, "sqlite3", "file:sqlite-details-interval?mode=memory&_fk=1")
+	t.Cleanup(func() { client.Close() })
+
+	ctx := authz.WithTestBypass(context.Background())
+	ctx = ent.NewContext(ctx, client)
+	readCount := 0
+	worker := &Worker{
+		Ent: client,
+		Config: Config{
+			CRON:                              "0 0 * * *",
+			SQLiteRequestDetailsCheckInterval: time.Hour,
+		},
+		sqliteDatabaseSize: func(context.Context) (int64, error) {
+			readCount++
+			return 0, nil
+		},
+	}
+
+	require.NoError(t, worker.cleanupSQLiteRequestDetailsIfNeeded(ctx))
+	require.NoError(t, worker.cleanupSQLiteRequestDetailsIfNeeded(ctx))
+	require.Equal(t, 1, readCount)
+}
+
 func TestWorkerClearAllRequestRecords(t *testing.T) {
 	client := enttest.NewEntClient(t, "sqlite3", "file:ent?mode=memory&_fk=1")
 	t.Cleanup(func() { client.Close() })

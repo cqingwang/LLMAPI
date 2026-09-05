@@ -199,22 +199,6 @@ export function BackupSettings() {
                 onCheckedChange={(checked) => setBackupOptions({ ...backupOptions, includeAPIKeys: checked })}
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="include-usage-stats">{t('system.backup.includeUsageStats')}</Label>
-              <Switch
-                id="include-usage-stats"
-                checked={backupOptions.includeUsageStats}
-                onCheckedChange={(checked) => setBackupOptions({ ...backupOptions, includeUsageStats: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="include-request-logs">{t('system.backup.includeRequestLogs')}</Label>
-              <Switch
-                id="include-request-logs"
-                checked={backupOptions.includeRequestLogs}
-                onCheckedChange={(checked) => setBackupOptions({ ...backupOptions, includeRequestLogs: checked })}
-              />
-            </div>
           </div>
           <Button onClick={handleBackup} disabled={backup.isPending} className="w-full">
             {backup.isPending ? (
@@ -525,35 +509,6 @@ export function BackupSettings() {
                 onCheckedChange={(checked) => setAutoBackupForm({ ...autoBackupForm, includeModelPrices: checked })}
               />
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="auto-include-usage-stats">{t('system.backup.includeUsageStats')}</Label>
-              <Switch
-                id="auto-include-usage-stats"
-                checked={autoBackupForm.includeUsageStats}
-                onCheckedChange={(checked) => setAutoBackupForm({ ...autoBackupForm, includeUsageStats: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="auto-include-request-logs">{t('system.backup.includeRequestLogs')}</Label>
-              <Switch
-                id="auto-include-request-logs"
-                checked={autoBackupForm.includeRequestLogs}
-                onCheckedChange={(checked) => setAutoBackupForm({ ...autoBackupForm, includeRequestLogs: checked })}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="retention-days">{t('system.autoBackup.retentionDays')}</Label>
-            <Input
-              id="retention-days"
-              type="number"
-              min={0}
-              max={365}
-              value={autoBackupForm.retentionDays}
-              onChange={(e) => setAutoBackupForm({ ...autoBackupForm, retentionDays: parseInt(e.target.value) || 0 })}
-            />
-            <p className="text-sm text-muted-foreground">{t('system.autoBackup.retentionDaysDescription')}</p>
           </div>
 
           {autoBackupSettings.data?.lastBackupAt && (() => {

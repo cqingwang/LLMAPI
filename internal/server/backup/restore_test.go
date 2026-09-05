@@ -741,6 +741,16 @@ func TestBackupService_Restore_UsageStats(t *testing.T) {
 		IncludeUsageStats: true,
 	})
 	require.NoError(t, err)
+	var legacyBackup BackupData
+	require.NoError(t, json.Unmarshal(data, &legacyBackup))
+	legacyBackup.UsageLogs = []*BackupUsageLog{{
+		UsageLog:    *usage,
+		ProjectName: proj.Name,
+		ChannelName: ch.Name,
+		APIKeyKey:   ak.Key,
+	}}
+	data, err = json.Marshal(legacyBackup)
+	require.NoError(t, err)
 
 	_, err = client.UsageLog.Delete().Exec(ctx)
 	require.NoError(t, err)
@@ -789,7 +799,7 @@ func TestBackupService_Restore_UsageStats(t *testing.T) {
 	require.Equal(t, restoredRequest.ID, usageLogsAfterSecondRestore[0].RequestID)
 }
 
-func TestBackupService_Restore_UsageStatsWithRequestLogs(t *testing.T) {
+func TestBackupService_Restore_LegacyRequestLogs(t *testing.T) {
 	client, service, ctx := setupBackupTest(t)
 	defer client.Close()
 
@@ -797,13 +807,29 @@ func TestBackupService_Restore_UsageStatsWithRequestLogs(t *testing.T) {
 	proj := createBackupTestProject(t, client, ctx, "Project1", "Test Project")
 	ch := createBackupTestChannel(t, client, ctx, "Channel 1", channel.TypeOpenai)
 	ak := createBackupTestAPIKey(t, client, ctx, user, proj, "API Key 1", "sk-test-key-1")
-	_, usage := createBackupTestUsage(t, client, ctx, proj, ch, ak)
+	req, usage := createBackupTestUsage(t, client, ctx, proj, ch, ak)
 
 	data, err := service.Backup(ctx, BackupOptions{
 		IncludeAPIKeys:     true,
 		IncludeUsageStats:  true,
 		IncludeRequestLogs: true,
 	})
+	require.NoError(t, err)
+	var legacyBackup BackupData
+	require.NoError(t, json.Unmarshal(data, &legacyBackup))
+	legacyBackup.UsageLogs = []*BackupUsageLog{{
+		UsageLog:    *usage,
+		ProjectName: proj.Name,
+		ChannelName: ch.Name,
+		APIKeyKey:   ak.Key,
+	}}
+	legacyBackup.UsageRequests = []*BackupUsageRequest{{
+		Request:     *req,
+		ProjectName: proj.Name,
+		ChannelName: ch.Name,
+		APIKeyKey:   ak.Key,
+	}}
+	data, err = json.Marshal(legacyBackup)
 	require.NoError(t, err)
 
 	_, err = client.UsageLog.Delete().Exec(ctx)

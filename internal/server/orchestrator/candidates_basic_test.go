@@ -7,6 +7,7 @@ import (
 
 	"github.com/looplj/axonhub/internal/ent/channel"
 	"github.com/looplj/axonhub/internal/objects"
+	"github.com/looplj/axonhub/internal/server/biz"
 	"github.com/looplj/axonhub/llm"
 )
 
@@ -173,6 +174,35 @@ func TestSpecifiedChannelSelector_Select_ValidChannel(t *testing.T) {
 	require.Equal(t, ch.ID, result[0].Channel.ID)
 }
 
+func TestSpecifiedChannelSelector_Select_ModelMapping(t *testing.T) {
+	ctx, client := setupTest(t)
+
+	ch, err := client.Channel.Create().
+		SetType(channel.TypeOpenai).
+		SetName("Mapped Channel").
+		SetBaseURL("https://api.openai.com/v1").
+		SetCredentials(objects.ChannelCredentials{APIKey: "test-key"}).
+		SetSupportedModels([]string{"deepseek-v4-flash-vision-exp"}).
+		SetSettings(&objects.ChannelSettings{
+			ModelMappings: []objects.ModelMapping{{
+				From: "deepseek-v4-flash",
+				To:   "deepseek-v4-flash-vision-exp",
+			}},
+		}).
+		SetDefaultTestModel("deepseek-v4-flash").
+		SetStatus(channel.StatusEnabled).
+		Save(ctx)
+	require.NoError(t, err)
+
+	channelService := newTestChannelServiceForChannels(client)
+	selector := NewSpecifiedChannelModelSelector(channelService, objects.GUID{ID: ch.ID})
+
+	result, err := selector.Select(ctx, &llm.Request{Model: "deepseek-v4-flash"})
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Equal(t, "deepseek-v4-flash-vision-exp", result[0].Models[0].ActualModel)
+}
+
 // TestSpecifiedChannelSelector_Select_ModelNotSupported tests SpecifiedChannelSelector with unsupported model.
 func TestSpecifiedChannelSelector_Select_ModelNotSupported(t *testing.T) {
 	ctx, client := setupTest(t)
@@ -198,6 +228,7 @@ func TestSpecifiedChannelSelector_Select_ModelNotSupported(t *testing.T) {
 	result, err := selector.Select(ctx, req)
 	require.Error(t, err)
 	require.Nil(t, result)
+	require.ErrorIs(t, err, biz.ErrInvalidModel)
 	require.Contains(t, err.Error(), "model gpt-4 not supported")
 }
 

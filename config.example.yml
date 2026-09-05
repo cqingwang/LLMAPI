@@ -161,10 +161,13 @@ gc:
   cron: "0 2 * * *"              # Cron expression for GC execution (env: AXONHUB_GC_CRON)
                                  # This example runs daily at 2:00 AM
                                  # Format: minute hour day month day_of_week
+  sqlite_request_details_check_interval: "10m" # SQLite 体积检查的最小间隔
                                  # Examples:
                                  # "0 2 * * *"     - Daily at 2:00 AM
                                  # "0 3 * * 0"     - Weekly on Sunday at 3:00 AM
                                  # "0 4 1 * *"     - Monthly on 1st day at 4:00 AM
+  # SQLite 请求详情保护自动生效：达到 2 GiB 时仅保留最近 30 条详情。
+  # 请求元数据和用量日志继续保留。
   vacuum_enabled: false          # Enable VACUUM after cleanup (env: AXONHUB_GC_VACUUM_ENABLED)
                                  # Supported for SQLite and PostgreSQL
                                  # SQLite: Rebuilds database file to reclaim space

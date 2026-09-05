@@ -15,9 +15,7 @@ import (
 	"github.com/looplj/axonhub/internal/ent/channelmodelprice"
 	"github.com/looplj/axonhub/internal/ent/model"
 	"github.com/looplj/axonhub/internal/ent/project"
-	"github.com/looplj/axonhub/internal/ent/request"
 	"github.com/looplj/axonhub/internal/ent/system"
-	"github.com/looplj/axonhub/internal/ent/usagelog"
 	"github.com/looplj/axonhub/internal/server/biz"
 )
 
@@ -90,12 +88,7 @@ func (svc *BackupService) doBackupToWriter(ctx context.Context, opts BackupOptio
 	if err := svc.streamAPIKeys(ctx, o, opts); err != nil {
 		return err
 	}
-	if err := svc.streamUsageRequests(ctx, o, opts); err != nil {
-		return err
-	}
-	if err := svc.streamUsageLogs(ctx, o, opts); err != nil {
-		return err
-	}
+	// 日志与请求详情可能占据备份主体，新备份统一排除；旧备份仍兼容恢复。
 
 	_, err := w.Write([]byte("}"))
 	return err
@@ -286,73 +279,6 @@ func (svc *BackupService) streamAPIKeys(ctx context.Context, o *objWriter, opts 
 	)
 }
 
-func (svc *BackupService) streamUsageRequests(ctx context.Context, o *objWriter, opts BackupOptions) error {
-	return streamArrayField(o, "usage_requests", opts.IncludeRequestLogs, true,
-		func(lastID int) ([]*ent.Request, int, error) {
-			query := svc.db.Request.Query().
-				Where(request.IDGT(lastID)).
-				Order(ent.Asc(request.FieldID)).
-				Limit(backupBatchSize).
-				WithProject().
-				WithChannel()
-			if opts.IncludeAPIKeys {
-				query.WithAPIKey()
-			}
-			rows, err := query.All(ctx)
-			if err != nil {
-				return nil, 0, err
-			}
-			nextID := 0
-			if len(rows) > 0 {
-				nextID = rows[len(rows)-1].ID
-			}
-			return rows, nextID, nil
-		},
-		func(req *ent.Request) ([]byte, bool, error) {
-			b, err := json.Marshal(backupUsageRequest(req, opts.IncludeAPIKeys))
-			return b, true, err
-		},
-	)
-}
-
-func (svc *BackupService) streamUsageLogs(ctx context.Context, o *objWriter, opts BackupOptions) error {
-	apiKeyKeys := map[int]string{}
-	if opts.IncludeUsageStats && opts.IncludeAPIKeys {
-		apiKeys, err := svc.db.APIKey.Query().
-			Select(apikey.FieldID, apikey.FieldKey).
-			All(ctx)
-		if err != nil {
-			return err
-		}
-		for _, ak := range apiKeys {
-			apiKeyKeys[ak.ID] = ak.Key
-		}
-	}
-	return streamArrayField(o, "usage_logs", opts.IncludeUsageStats, true,
-		func(lastID int) ([]*ent.UsageLog, int, error) {
-			rows, err := svc.db.UsageLog.Query().
-				Where(usagelog.IDGT(lastID)).
-				Order(ent.Asc(usagelog.FieldID)).
-				Limit(backupBatchSize).
-				WithProject().
-				WithChannel().
-				All(ctx)
-			if err != nil {
-				return nil, 0, err
-			}
-			nextID := 0
-			if len(rows) > 0 {
-				nextID = rows[len(rows)-1].ID
-			}
-			return rows, nextID, nil
-		},
-		func(ul *ent.UsageLog) ([]byte, bool, error) {
-			b, err := json.Marshal(backupUsageLog(ul, apiKeyKeys))
-			return b, true, err
-		},
-	)
-}
-
 // objWriter writes a JSON object incrementally, tracking leading commas.
 type objWriter struct {
 	w         io.Writer
@@ -440,22 +366,6 @@ func streamArrayField[T any](
 		return nil
 	}
 	return o.rawField(name, []byte("[]"))
-}
-
-func backupUsageRequest(req *ent.Request, includeAPIKeyValues bool) *BackupUsageRequest {
-	data := &BackupUsageRequest{Request: *req}
-	if req.Edges.Project != nil {
-		data.ProjectName = req.Edges.Project.Name
-	}
-	if req.Edges.Channel != nil {
-		data.ChannelName = req.Edges.Channel.Name
-	}
-	if includeAPIKeyValues && req.Edges.APIKey != nil {
-		data.APIKeyKey = req.Edges.APIKey.Key
-	}
-	data.Request.Edges = ent.RequestEdges{}
-
-	return data
 }
 
 func backupUsageLog(ul *ent.UsageLog, apiKeyKeys map[int]string) *BackupUsageLog {

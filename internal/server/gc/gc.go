@@ -3,6 +3,8 @@ package gc
 import (
 	"context"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -26,6 +28,12 @@ import (
 
 var defaultBatchSize = 500
 
+const (
+	sqliteRequestDetailsSizeThreshold        int64 = 2 * 1024 * 1024 * 1024
+	sqliteRequestDetailsKeepCount                  = 30
+	defaultSQLiteRequestDetailsCheckInterval       = 10 * time.Minute
+)
+
 type TriggerGcCleanupInput struct {
 	RequestsCleanupDays  int `json:"requests_cleanup_days"`
 	UsageLogsCleanupDays int `json:"usage_logs_cleanup_days"`
@@ -39,9 +47,10 @@ type GcCleanupPreviewItem struct {
 }
 
 type Config struct {
-	CRON          string `json:"cron" yaml:"cron" conf:"cron" validate:"required"`
-	VacuumEnabled bool   `json:"vacuum_enabled" yaml:"vacuum_enabled" conf:"vacuum_enabled"`
-	VacuumFull    bool   `json:"vacuum_full" yaml:"vacuum_full" conf:"vacuum_full"`
+	CRON                              string        `json:"cron" yaml:"cron" conf:"cron" validate:"required"`
+	VacuumEnabled                     bool          `json:"vacuum_enabled" yaml:"vacuum_enabled" conf:"vacuum_enabled"`
+	VacuumFull                        bool          `json:"vacuum_full" yaml:"vacuum_full" conf:"vacuum_full"`
+	SQLiteRequestDetailsCheckInterval time.Duration `json:"sqlite_request_details_check_interval" yaml:"sqlite_request_details_check_interval" conf:"sqlite_request_details_check_interval"`
 }
 
 type Worker struct {
@@ -49,6 +58,13 @@ type Worker struct {
 	DataStorageService *biz.DataStorageService
 	Ent                *ent.Client
 	Config             Config
+
+	// 测试替换此函数，避免为验证阈值创建多 GiB 数据库样本。
+	sqliteDatabaseSize func(context.Context) (int64, error)
+
+	// 防止手动 GC 或多个调度入口在短时间内重复读取 SQLite 体积。
+	sqliteRequestDetailsCheckMu       sync.Mutex
+	sqliteRequestDetailsLastCheckedAt time.Time
 }
 
 type Params struct {
@@ -113,6 +129,10 @@ func (w *Worker) runCleanup(ctx context.Context, manual bool, manualDays map[str
 
 	ctx = ent.NewContext(ctx, w.Ent)
 	ctx = schematype.SkipSoftDelete(ctx)
+
+	if err := w.cleanupSQLiteRequestDetailsIfNeeded(ctx); err != nil {
+		log.Error(ctx, "Failed to compact SQLite request details", log.Cause(err))
+	}
 
 	policy, err := w.SystemService.StoragePolicy(ctx)
 	if err != nil {
@@ -204,6 +224,163 @@ func (w *Worker) runCleanup(ctx context.Context, manual bool, manualDays map[str
 	}
 
 	log.Info(ctx, "Cleanup process completed")
+}
+
+// cleanupSQLiteRequestDetailsIfNeeded 在 SQLite 数据库达到保护阈值时压缩大体积请求详情。
+// 请求元数据和用量记录继续保留，只有最新 30 条请求保留完整详情。
+func (w *Worker) cleanupSQLiteRequestDetailsIfNeeded(ctx context.Context) error {
+	if w.Ent == nil {
+		return nil
+	}
+
+	w.sqliteRequestDetailsCheckMu.Lock()
+	defer w.sqliteRequestDetailsCheckMu.Unlock()
+
+	checkInterval := w.Config.SQLiteRequestDetailsCheckInterval
+	if checkInterval <= 0 {
+		checkInterval = defaultSQLiteRequestDetailsCheckInterval
+	}
+	now := time.Now()
+	if !w.sqliteRequestDetailsLastCheckedAt.IsZero() && now.Sub(w.sqliteRequestDetailsLastCheckedAt) < checkInterval {
+		return nil
+	}
+	w.sqliteRequestDetailsLastCheckedAt = now
+
+	readSize := w.sqliteDatabaseSize
+	if readSize == nil {
+		readSize = w.readSQLiteDatabaseSize
+	}
+
+	databaseSize, err := readSize(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to read SQLite database size: %w", err)
+	}
+	if databaseSize < sqliteRequestDetailsSizeThreshold {
+		return nil
+	}
+
+	protectedRequests, err := w.Ent.Request.Query().
+		Select(request.FieldID).
+		Order(ent.Desc(request.FieldCreatedAt), ent.Desc(request.FieldID)).
+		Limit(sqliteRequestDetailsKeepCount).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to find recent requests to preserve: %w", err)
+	}
+	protectedIDs := make([]int, len(protectedRequests))
+	for i, req := range protectedRequests {
+		protectedIDs[i] = req.ID
+	}
+
+	compacted, err := w.compactRequestDetails(ctx, protectedIDs)
+	if err != nil {
+		return err
+	}
+
+	log.Info(ctx, "Compacted SQLite request details",
+		log.Int64("database_size", databaseSize),
+		log.Int("compacted_requests", compacted),
+		log.Int("preserved_requests", len(protectedIDs)),
+	)
+	return nil
+}
+
+func (w *Worker) readSQLiteDatabaseSize(ctx context.Context) (int64, error) {
+	dbDriver, ok := w.Ent.Driver().(*entsql.Driver)
+	if !ok || dbDriver.Dialect() != dialect.SQLite {
+		return 0, nil
+	}
+
+	var pageCount, pageSize int64
+	if err := dbDriver.DB().QueryRowContext(ctx, "PRAGMA page_count").Scan(&pageCount); err != nil {
+		return 0, fmt.Errorf("failed to read SQLite page count: %w", err)
+	}
+	if err := dbDriver.DB().QueryRowContext(ctx, "PRAGMA page_size").Scan(&pageSize); err != nil {
+		return 0, fmt.Errorf("failed to read SQLite page size: %w", err)
+	}
+
+	return pageCount * pageSize, nil
+}
+
+func (w *Worker) compactRequestDetails(ctx context.Context, protectedIDs []int) (int, error) {
+	dbDriver, ok := w.Ent.Driver().(*entsql.Driver)
+	if !ok || dbDriver.Dialect() != dialect.SQLite {
+		return 0, nil
+	}
+
+	lastID := 0
+	compacted := 0
+	for {
+		query := w.Ent.Request.Query().
+			Select(request.FieldID).
+			Where(request.IDGT(lastID))
+		if len(protectedIDs) > 0 {
+			query = query.Where(request.Not(request.IDIn(protectedIDs...)))
+		}
+
+		requests, err := query.Order(ent.Asc(request.FieldID)).Limit(w.getBatchSize()).All(ctx)
+		if err != nil {
+			return compacted, fmt.Errorf("failed to find request details to compact: %w", err)
+		}
+		if len(requests) == 0 {
+			return compacted, nil
+		}
+
+		requestIDs := make([]int, len(requests))
+		for i, req := range requests {
+			requestIDs[i] = req.ID
+		}
+		if err := compactSQLiteRequestBatch(ctx, dbDriver, requestIDs); err != nil {
+			return compacted, err
+		}
+
+		lastID = requestIDs[len(requestIDs)-1]
+		compacted += len(requestIDs)
+	}
+}
+
+func compactSQLiteRequestBatch(ctx context.Context, dbDriver *entsql.Driver, requestIDs []int) error {
+	if len(requestIDs) == 0 {
+		return nil
+	}
+
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(requestIDs)), ",")
+	tx, err := dbDriver.DB().BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin request detail compaction transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	requestArgs := make([]any, 0, len(requestIDs)+1)
+	requestArgs = append(requestArgs, []byte(`{}`))
+	for _, id := range requestIDs {
+		requestArgs = append(requestArgs, id)
+	}
+
+	if _, err := tx.ExecContext(ctx,
+		"UPDATE requests SET request_headers = NULL, request_body = ?, response_body = NULL, response_chunks = NULL WHERE id IN ("+placeholders+")",
+		requestArgs...,
+	); err != nil {
+		return fmt.Errorf("failed to compact request details: %w", err)
+	}
+
+	executionArgs := make([]any, 0, len(requestIDs)+1)
+	executionArgs = append(executionArgs, []byte(`{}`))
+	for _, id := range requestIDs {
+		executionArgs = append(executionArgs, id)
+	}
+	if _, err := tx.ExecContext(ctx,
+		"UPDATE request_executions SET request_headers = NULL, response_headers = NULL, request_body = ?, response_body = NULL, response_chunks = NULL WHERE request_id IN ("+placeholders+")",
+		executionArgs...,
+	); err != nil {
+		return fmt.Errorf("failed to compact request execution details: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit request detail compaction: %w", err)
+	}
+
+	return nil
 }
 
 // cleanupRequests deletes requests older than the specified number of days.

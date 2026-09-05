@@ -960,8 +960,9 @@ func matchChannelTagsFilter(allowedTags []string, matchMode objects.ChannelTagsM
 
 // SpecifiedChannelSelector allows selecting specific channels (including disabled ones) for testing.
 type SpecifiedChannelSelector struct {
-	ChannelService *biz.ChannelService
-	ChannelID      objects.GUID
+	ChannelService  *biz.ChannelService
+	ChannelID       objects.GUID
+	useModelEntries bool
 	// SelectedAPIKey, if non-empty, forces the outbound to use this specific API key.
 	// Used by the channel key test flow to test a single key.
 	SelectedAPIKey string
@@ -971,6 +972,15 @@ func NewSpecifiedChannelSelector(channelService *biz.ChannelService, channelID o
 	return &SpecifiedChannelSelector{
 		ChannelService: channelService,
 		ChannelID:      channelID,
+	}
+}
+
+// NewSpecifiedChannelModelSelector 创建面向用户模型列表的指定渠道选择器，接受渠道模型列表暴露的映射、前缀和归一化模型 ID。
+func NewSpecifiedChannelModelSelector(channelService *biz.ChannelService, channelID objects.GUID) *SpecifiedChannelSelector {
+	return &SpecifiedChannelSelector{
+		ChannelService:  channelService,
+		ChannelID:       channelID,
+		useModelEntries: true,
 	}
 }
 
@@ -987,10 +997,13 @@ func (s *SpecifiedChannelSelector) Select(ctx context.Context, req *llm.Request)
 	}
 
 	entries := channel.GetDirectModelEntries()
+	if s.useModelEntries {
+		entries = channel.GetModelEntries()
+	}
 
 	entry, ok := entries[req.Model]
 	if !ok {
-		return nil, fmt.Errorf("model %s not supported in channel %s", req.Model, channel.Name)
+		return nil, fmt.Errorf("%w: model %s not supported in channel %s", biz.ErrInvalidModel, req.Model, channel.Name)
 	}
 
 	endpoints := channel.ResolveEndpoints()

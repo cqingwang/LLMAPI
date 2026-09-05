@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -50,6 +51,13 @@ type PlaygroundHandlersParams struct {
 type PlaygroundHandlers struct {
 	ChannelService             *biz.ChannelService
 	ChatCompletionOrchestrator *orchestrator.ChatCompletionOrchestrator
+}
+
+func isPlaygroundRequestCanceled(ctx context.Context, err error) bool {
+	return errors.Is(err, context.Canceled) ||
+		errors.Is(err, context.DeadlineExceeded) ||
+		errors.Is(ctx.Err(), context.Canceled) ||
+		errors.Is(ctx.Err(), context.DeadlineExceeded)
 }
 
 func NewPlaygroundHandlers(params PlaygroundHandlersParams) *PlaygroundHandlers {
@@ -228,6 +236,10 @@ func (handlers *PlaygroundHandlers) ChatCompletion(c *gin.Context) {
 
 	genericReq, err := httpclient.ReadHTTPRequest(c.Request)
 	if err != nil {
+		if isPlaygroundRequestCanceled(ctx, err) {
+			return
+		}
+
 		log.Error(ctx, "Error reading HTTP request", log.Cause(err))
 		c.JSON(http.StatusBadRequest, PlaygroundResponseError{
 			Error: struct {
@@ -297,11 +309,15 @@ func (handlers *PlaygroundHandlers) ChatCompletion(c *gin.Context) {
 			return
 		}
 
-		processor = processor.WithChannelSelector(orchestrator.NewSpecifiedChannelSelector(handlers.ChannelService, channelID))
+		processor = processor.WithChannelSelector(orchestrator.NewSpecifiedChannelModelSelector(handlers.ChannelService, channelID))
 	}
 
 	result, err := processor.Process(ctx, genericReq)
 	if err != nil {
+		if isPlaygroundRequestCanceled(ctx, err) {
+			return
+		}
+
 		log.Error(ctx, "Error processing chat completion", log.Cause(err))
 		errResponse := handlers.HandleError(err)
 		c.JSON(errResponse.Status, errResponse)

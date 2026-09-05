@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
@@ -16,6 +15,8 @@ import (
 	"github.com/looplj/axonhub/internal/server/biz"
 	"github.com/looplj/axonhub/internal/server/scheduler"
 )
+
+const backupFilename = "axonhub-backup.json"
 
 // Reschedule cancels and re-creates the backup cron job. Call after the
 // system timezone or backup settings change.
@@ -97,12 +98,12 @@ func (svc *BackupService) performBackup(ctx context.Context, settings *biz.AutoB
 		IncludeModels:        settings.IncludeModels,
 		IncludeAPIKeys:       settings.IncludeAPIKeys,
 		IncludeModelPrices:   settings.IncludeModelPrices,
-		IncludeUsageStats:    settings.IncludeUsageStats,
-		IncludeRequestLogs:   settings.IncludeRequestLogs,
+		// 新备份始终排除日志和请求详情，避免备份文件持续膨胀。
+		IncludeUsageStats:  false,
+		IncludeRequestLogs: false,
 	}
 
-	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	filename := fmt.Sprintf("axonhub-backup-%s.json", timestamp)
+	filename := backupFilename
 
 	if ds.Type == datastorage.TypeDatabase {
 		data, err := svc.doBackup(ctx, opts)
@@ -143,16 +144,16 @@ func (svc *BackupService) performBackup(ctx context.Context, settings *biz.AutoB
 		)
 	}
 
-	if settings.RetentionDays > 0 {
-		if err := svc.cleanupOldBackups(ctx, ds, settings.RetentionDays); err != nil {
-			log.Warn(ctx, "Failed to cleanup old backups", log.Cause(err))
+	if ds.Type != datastorage.TypeDatabase {
+		if err := svc.cleanupDuplicateBackups(ctx, ds); err != nil {
+			log.Warn(ctx, "Failed to cleanup duplicate backups", log.Cause(err))
 		}
 	}
 
 	return nil
 }
 
-func (svc *BackupService) cleanupOldBackups(ctx context.Context, ds *ent.DataStorage, retentionDays int) error {
+func (svc *BackupService) cleanupDuplicateBackups(ctx context.Context, ds *ent.DataStorage) error {
 	fs, err := svc.dataStorageService.GetFileSystem(ctx, ds)
 	if err != nil {
 		return fmt.Errorf("failed to get data storage filesystem: %w", err)
@@ -163,32 +164,19 @@ func (svc *BackupService) cleanupOldBackups(ctx context.Context, ds *ent.DataSto
 		return fmt.Errorf("failed to list backups: %w", err)
 	}
 
-	cutoff := time.Now().AddDate(0, 0, -retentionDays)
-
-	var backupFiles []os.FileInfo
-
 	for _, f := range files {
-		if strings.HasPrefix(f.Name(), "axonhub-backup-") && strings.HasSuffix(f.Name(), ".json") {
-			backupFiles = append(backupFiles, f)
+		if f.Name() == backupFilename || !strings.HasPrefix(f.Name(), "axonhub-backup-") || !strings.HasSuffix(f.Name(), ".json") {
+			continue
 		}
-	}
-
-	sort.Slice(backupFiles, func(i, j int) bool {
-		return backupFiles[i].ModTime().Before(backupFiles[j].ModTime())
-	})
-
-	for _, f := range backupFiles {
-		if f.ModTime().Before(cutoff) {
-			if err := fs.Remove(f.Name()); err != nil {
-				log.Warn(ctx, "Failed to delete old backup",
-					log.String("file", f.Name()),
-					log.Cause(err),
-				)
-			} else {
-				log.Info(ctx, "Deleted old backup",
-					log.String("file", f.Name()),
-				)
-			}
+		if err := fs.Remove(f.Name()); err != nil {
+			log.Warn(ctx, "Failed to delete duplicate backup",
+				log.String("file", f.Name()),
+				log.Cause(err),
+			)
+		} else {
+			log.Info(ctx, "Deleted duplicate backup",
+				log.String("file", f.Name()),
+			)
 		}
 	}
 
